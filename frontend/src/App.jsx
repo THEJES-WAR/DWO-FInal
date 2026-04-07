@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { NotificationProvider, useNotifications } from './context/NotificationContext';
 import ToastManager from './components/notifications/ToastManager';
 import NotificationDrawer from './components/notifications/NotificationDrawer';
+import SingleNotificationModal from './components/notifications/SingleNotificationModal';
 import NotificationBar from './components/common/NotificationBar';
 import Login from './pages/Login';
 import DoctorDashboard from './pages/DoctorDashboard';
@@ -13,6 +14,7 @@ import AdminOverview from './pages/admin/AdminOverview';
 import AdminWorkflow from './pages/admin/AdminWorkflow';
 import AdminBottlenecks from './pages/admin/AdminBottlenecks';
 import AdminStaff from './pages/admin/AdminStaff';
+import AdminAppointments from './pages/admin/AdminAppointments';
 
 const Stub = ({ title }) => (
   <div className="flex items-center justify-center h-full">
@@ -34,11 +36,15 @@ const RoleBasedDashboard = () => {
 };
 
   const AppContent = () => {
-  return (
-    <Router>
-      <ToastManager />
-      <NotificationDrawer />
-      <Routes>
+    const { topBarNotifications, dismissTopBar } = useNotifications();
+
+    return (
+      <Router>
+        <ToastManager />
+        <NotificationBar notifications={topBarNotifications} onDismiss={dismissTopBar} />
+        <NotificationDrawer />
+        <SingleNotificationModal />
+        <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/dashboard" element={<RoleBasedDashboard />} />
         <Route path="/admin" element={<Navigate to="/admin-v2/overview" />} />
@@ -47,9 +53,8 @@ const RoleBasedDashboard = () => {
           <Route path="bottlenecks" element={<AdminBottlenecks />} />
           <Route path="workflow" element={<AdminWorkflow />} />
           <Route path="staff" element={<AdminStaff />} />
-          <Route path="appointments" element={<Stub title="Appointments" />} />
+          <Route path="appointments" element={<AdminAppointments />} />
           <Route path="alerts" element={<Stub title="Alerts" />} />
-          <Route path="reports" element={<Stub title="Reports" />} />
           <Route index element={<Navigate to="overview" />} />
         </Route>
       </Routes>

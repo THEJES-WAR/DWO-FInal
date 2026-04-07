@@ -13,7 +13,8 @@ const API_URL = 'http://localhost:5000/api/doctor';
 
 const DoctorDashboard = () => {
     const navigate = useNavigate();
-    const { addToast, toggleDrawer } = useNotifications();
+    const { addToast, toggleDrawer, notifications } = useNotifications();
+    const unreadCount = notifications?.filter(n => !n.read).length || 0;
     const [profile, setProfile] = useState(null);
     const [patients, setPatients] = useState([]);
     const [selectedPatient, setSelectedPatient] = useState(null);
@@ -37,8 +38,8 @@ const DoctorDashboard = () => {
         duration: ''
     });
 
-    const user = JSON.parse(localStorage.getItem('user'));
     const token = localStorage.getItem('token');
+    const user = React.useMemo(() => JSON.parse(localStorage.getItem('user')), []);
 
     useEffect(() => {
         if (!token || user?.role !== 'Doctor') {
@@ -55,6 +56,11 @@ const DoctorDashboard = () => {
         });
 
         socket.on('patient:queued', () => fetchPatients());
+
+        // Admin reminder
+        socket.on('admin:reminder', (note) => {
+            addToast({ type: 'urgent', message: note.message, senderName: 'MedPlus Admin', duration: 5000 });
+        });
 
         return () => socket.disconnect();
     }, [token, user, navigate]);
@@ -135,8 +141,25 @@ const DoctorDashboard = () => {
                         <div style={{ fontSize: '11px', fontWeight: 600, color: '#94A3B8' }}>{profile.specialty}</div>
                     </div>
                     <div style={{ display: 'flex', gap: '12px' }}>
-                        <button onClick={toggleDrawer} style={{ background: '#F1F5F9', border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer', color: '#64748B' }}>
+                        <button 
+                            onClick={toggleDrawer} 
+                            style={{ 
+                                background: '#F1F5F9', border: 'none', padding: '10px', 
+                                borderRadius: '10px', cursor: 'pointer', color: unreadCount > 0 ? '#6366F1' : '#64748B',
+                                position: 'relative'
+                            }}
+                        >
                             <Bell size={20} />
+                            {unreadCount > 0 && (
+                                <span style={{ 
+                                    position: 'absolute', top: '-5px', right: '-5px', 
+                                    background: '#EF4444', border: '2px solid #FFFFFF', 
+                                    borderRadius: '50%', padding: '2px 6px', fontSize: '10px', 
+                                    color: 'white', fontWeight: 900 
+                                }}>
+                                    {unreadCount}
+                                </span>
+                            )}
                         </button>
                         <button onClick={() => { localStorage.clear(); navigate('/'); }} style={{ background: '#F1F5F9', border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer', color: '#64748B' }}>
                             <LogOut size={20} />

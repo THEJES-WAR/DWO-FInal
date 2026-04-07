@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { useNotifications } from '../../context/NotificationContext';
 
 const NotificationBar = ({ notifications, onDismiss }) => {
+    const { toggleDrawer } = useNotifications();
     const [current, setCurrent] = useState(null);
 
     useEffect(() => {
@@ -12,7 +14,7 @@ const NotificationBar = ({ notifications, onDismiss }) => {
             const timer = setTimeout(() => {
                 setCurrent(null);
                 onDismiss(latest.id || latest._id);
-            }, 10000);
+            }, 5000);
 
             return () => clearTimeout(timer);
         }
@@ -24,14 +26,16 @@ const NotificationBar = ({ notifications, onDismiss }) => {
         success: '#10B981',
         error: '#EF4444',
         info: '#3B82F6',
-        warning: '#F59E0B'
+        warning: '#F59E0B',
+        urgent: '#8B5CF6'
     };
-
+    
     const icons = {
         success: <CheckCircle2 size={18} />,
         error: <AlertCircle size={18} />,
         info: <Info size={18} />,
-        warning: <Bell size={18} />
+        warning: <Bell size={18} />,
+        urgent: <Bell size={18} />
     };
 
     return (
@@ -51,7 +55,12 @@ const NotificationBar = ({ notifications, onDismiss }) => {
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            animation: 'slideDown 0.3s ease-out'
+            animation: 'slideDown 0.3s ease-out',
+            cursor: 'pointer'
+        }} onClick={() => { 
+            setCurrent(null); 
+            onDismiss(current.id || current._id); 
+            openNotification(current); 
         }}>
             <style>
                 {`
@@ -68,8 +77,11 @@ const NotificationBar = ({ notifications, onDismiss }) => {
                 <div style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', marginBottom: '2px' }}>
                     {current.senderName || 'Notification'}
                 </div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', lineHeight: 1.4 }}>
-                    {current.message}
+                <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', lineHeight: 1.4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <span>{current.message}</span>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#94A3B8', whiteSpace: 'nowrap', marginLeft: '12px', marginTop: '3px' }}>
+                        {new Date(current.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                 </div>
             </div>
             <button 

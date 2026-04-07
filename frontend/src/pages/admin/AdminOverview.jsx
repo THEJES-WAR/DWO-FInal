@@ -21,7 +21,6 @@ const STAT_META = [
   { label: 'Active Doctors',  key: 'activeDoctors', icon: Stethoscope,  bg: '#F0FDF4', iconColor: '#16A34A' },
   { label: 'In Progress',     key: 'inProgress',    icon: Activity,     bg: '#F5F3FF', iconColor: '#7C3AED' },
   { label: 'Avg Wait (min)',  key: 'avgWaitTime',   icon: Clock,        bg: '#FFFBEB', iconColor: '#D97706' },
-  { label: 'Bed Occupancy',   key: 'bedOccupancy',  icon: BedDouble,    bg: '#FFF1F2', iconColor: '#E11D48' },
   { label: 'Emergencies',     key: 'emergencies',   icon: AlertOctagon, bg: '#FFF7ED', iconColor: '#EA580C' },
 ];
 
@@ -141,8 +140,8 @@ const AdminOverview = () => {
 
         {/* Donut / Pie */}
         <div style={{ ...card, padding: '24px' }}>
-          <p style={sectionTitle}>Ward Distribution</p>
-          <p style={sectionSub}>Current active patients</p>
+          <p style={sectionTitle}>Specialization Segregation</p>
+          <p style={sectionSub}>Patient volume by doctor specialty</p>
           <div style={{ height: '280px', marginTop: '12px' }}>
             {data.deptData && data.deptData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">

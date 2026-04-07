@@ -26,8 +26,8 @@ const PatientDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState('current'); // 'current' or 'history'
     
-    const user = JSON.parse(localStorage.getItem('user'));
     const token = localStorage.getItem('token');
+    const user = React.useMemo(() => JSON.parse(localStorage.getItem('user')), []);
     const { addToast, toggleDrawer } = useNotifications();
 
     useEffect(() => {
@@ -58,6 +58,11 @@ const PatientDashboard = () => {
         socket.on('patient:discharged', () => {
             addToast({ type: 'success', message: 'You have been discharged.' });
             fetchDashboardData();
+        });
+
+        // Admin reminder — show urgent toast for 5s and note is already stored in DB
+        socket.on('admin:reminder', (note) => {
+            addToast({ type: 'urgent', message: note.message, senderName: 'MedPlus Admin', duration: 5000 });
         });
 
         return () => socket.disconnect();
@@ -313,7 +318,74 @@ const PatientDashboard = () => {
                                 </div>
                             )}
 
-                            {/* Stage: Discharged block removed as status becomes registered */}
+                            {/* Stage: Discharged — show completion summary + restart option */}
+                            {status === 'discharged' && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                    {/* Discharge confirmation banner */}
+                                    <div style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', padding: '28px', borderRadius: '24px', border: '1px solid #6EE7B7', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                                        <div style={{ width: '52px', height: '52px', background: '#10B981', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
+                                            <CheckCircle size={28} />
+                                        </div>
+                                        <div>
+                                            <h4 style={{ margin: 0, color: '#065F46', fontWeight: 900, fontSize: '18px' }}>Visit Complete — You've been discharged! 🎉</h4>
+                                            <p style={{ margin: '6px 0 0', color: '#047857', fontSize: '14px', fontWeight: 500 }}>
+                                                Your visit summary has been saved to <strong>Medical History</strong>. If you have new symptoms, you can start a fresh consultation below.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Previous visit summary */}
+                                    <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', border: '1px solid #E2E8F0' }}>
+                                        <h4 style={{ margin: '0 0 16px', fontSize: '13px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>Last Visit Summary</h4>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            {assignedNurse && (
+                                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '12px', background: '#F8FAFC', borderRadius: '12px' }}>
+                                                    <div style={{ width: '36px', height: '36px', background: '#F5F3FF', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Activity size={16} color="#7C3AED" /></div>
+                                                    <div>
+                                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>Assigned Nurse</div>
+                                                        <div style={{ fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>{assignedNurse.name}</div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {assignedDoctor && (
+                                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '12px', background: '#F8FAFC', borderRadius: '12px' }}>
+                                                    <div style={{ width: '36px', height: '36px', background: '#EFF6FF', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Stethoscope size={16} color="#2563EB" /></div>
+                                                    <div>
+                                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>Consulting Doctor</div>
+                                                        <div style={{ fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>Dr. {assignedDoctor.name} · {assignedDoctor.specialization}</div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {doctorFeedback && (
+                                                <div style={{ padding: '12px 16px', background: '#FFFBEB', borderRadius: '12px', border: '1px solid #FDE68A' }}>
+                                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#92400E', textTransform: 'uppercase', marginBottom: '4px' }}>Doctor's Feedback</div>
+                                                    <div style={{ fontSize: '14px', color: '#78350F', fontWeight: 500 }}>{doctorFeedback}</div>
+                                                </div>
+                                            )}
+                                            {prescriptions && prescriptions.length > 0 && (
+                                                <div style={{ padding: '12px 16px', background: '#F0FDF4', borderRadius: '12px', border: '1px solid #BBF7D0' }}>
+                                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#166534', textTransform: 'uppercase', marginBottom: '8px' }}>Prescriptions ({prescriptions.length})</div>
+                                                    {prescriptions.map((rx, i) => (
+                                                        <div key={i} style={{ fontSize: '13px', color: '#15803D', fontWeight: 600, marginBottom: '4px' }}>
+                                                            • {rx.name} — {rx.type} {rx.dosage && `(${rx.dosage})`}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                        <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
+                                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#94A3B8' }}>START A NEW VISIT</span>
+                                        <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
+                                    </div>
+
+                                    {/* Fresh symptom submission */}
+                                    <IssueSubmission issue={null} onSubmit={handleIssueSubmit} />
+                                </div>
+                            )}
                         </div>
                     </div>
                 ) : (

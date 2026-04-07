@@ -4,6 +4,7 @@ import {
   LayoutDashboard, AlertTriangle, GitBranch, Users,
   Calendar, Bell, FileText, LogOut, Activity, ChevronRight
 } from 'lucide-react';
+import { useNotifications } from '../context/NotificationContext';
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -17,15 +18,15 @@ const AdminLayout = () => {
 
   const menuItems = [
     { label: 'Overview',     icon: LayoutDashboard, path: '/admin-v2/overview' },
-    { label: 'Bottlenecks',  icon: AlertTriangle,   path: '/admin-v2/bottlenecks' },
     { label: 'Workflow',     icon: GitBranch,        path: '/admin-v2/workflow' },
     { label: 'Staff',        icon: Users,            path: '/admin-v2/staff' },
     { label: 'Appointments', icon: Calendar,         path: '/admin-v2/appointments' },
-    { label: 'Alerts',       icon: Bell,             path: '/admin-v2/alerts' },
-    { label: 'Reports',      icon: FileText,         path: '/admin-v2/reports' },
   ];
 
   const activePage = location.pathname.split('/').pop().replace('-', ' ');
+
+  const { notifications, toggleDrawer } = useNotifications();
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100%', background: '#F1F5F9', fontFamily: "'Inter', sans-serif", overflow: 'hidden' }}>
@@ -158,18 +159,28 @@ const AdminLayout = () => {
               <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22C55E', display: 'inline-block', boxShadow: '0 0 0 2px rgba(34,197,94,0.25)', animation: 'pulse 2s infinite' }}></span>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#16A34A', letterSpacing: '0.04em' }}>LIVE</span>
             </div>
-            <button style={{
-              position: 'relative', width: '34px', height: '34px',
-              borderRadius: '8px', border: '1px solid #E2E8F0',
-              background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: '#64748B',
-            }}>
+            <button 
+              onClick={toggleDrawer}
+              style={{
+                position: 'relative', width: '34px', height: '34px',
+                borderRadius: '8px', border: '1px solid #E2E8F0',
+                background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: '#64748B',
+              }}
+            >
               <Bell size={16} />
-              <span style={{
-                position: 'absolute', top: '7px', right: '7px',
-                width: '7px', height: '7px', borderRadius: '50%',
-                background: '#EF4444', border: '1.5px solid white',
-              }}></span>
+              {unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: '-5px', right: '-5px',
+                  minWidth: '18px', height: '18px', borderRadius: '9px',
+                  background: '#EF4444', border: '2px solid white',
+                  color: 'white', fontSize: '10px', fontWeight: 900,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '0 4px'
+                }}>
+                  {unreadCount}
+                </span>
+              )}
             </button>
           </div>
         </header>

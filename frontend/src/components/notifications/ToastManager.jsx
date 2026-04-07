@@ -91,14 +91,13 @@ const ToastManager = () => {
   return (
     <div style={{
       position: 'fixed',
-      top: '20px',
-      left: '50%',
-      transform: 'translateX(-50%)',
+      bottom: '30px',
+      right: '30px',
       zIndex: 9999,
       display: 'flex',
-      flexDirection: 'column',
+      flexDirection: 'column-reverse',
       gap: '12px',
-      width: '400px',
+      width: '360px',
       maxWidth: '90vw',
       pointerEvents: 'none'
     }}>

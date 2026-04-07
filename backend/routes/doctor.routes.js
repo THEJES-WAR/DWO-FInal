@@ -64,14 +64,15 @@ router.put('/complete-consultation', verifyUser, verifyRole(['Doctor']), async (
 
         const billNo = `INV-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
         
-        const consultationFee = 500;
+        const consultationFee = 300;
         let prescriptionFee = 0;
         
         if (!noMedicine && prescriptions?.length > 0) {
-            prescriptionFee = prescriptions.length * 150; // Standard price per medicine
+            // Random amount between 300 and 1000 if medicines prescribed
+            prescriptionFee = Math.floor(Math.random() * 701) + 300; 
         }
 
-        const testFee = Math.floor(Math.random() * 1000); // Simulated lab tests
+        const testFee = 0; // Removed extra test fee as per new logic
         const totalAmount = consultationFee + prescriptionFee + testFee;
 
         const billing = {
@@ -129,6 +130,24 @@ router.put('/complete-consultation', verifyUser, verifyRole(['Doctor']), async (
         res.json({ message: 'Consultation completed.', billNo, totalAmount });
     } catch (err) {
         res.status(500).json({ error: 'Server error: ' + err.message });
+    }
+});
+
+/**
+ * GET /api/doctor/notifications
+ */
+router.get('/notifications', verifyUser, verifyRole(['Doctor']), async (req, res) => {
+    try {
+        const notificationsColl = getCollection('notifications');
+        const doctorId = req.user._id.toString();
+        const notes = await notificationsColl
+            .find({ recipientId: doctorId })
+            .sort({ createdAt: -1 })
+            .limit(20)
+            .toArray();
+        res.json(notes);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
     }
 });
 

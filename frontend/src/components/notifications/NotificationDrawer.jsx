@@ -43,7 +43,7 @@ const NotificationDrawer = () => {
                         background: n.read ? '#F8FAFC' : '#EFF6FF',
                         borderLeft: `4px solid ${n.read ? '#CBD5E1' : '#3B82F6'}`,
                         cursor: 'pointer'
-                    }} onClick={toggleDrawer}>
+                    }} onClick={() => { if (!n.read) markAsRead(n._id || n.id); }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                             <span style={{ fontSize: '13px', fontWeight: 700, color: n.read ? '#64748B' : '#1D4ED8', textTransform: 'capitalize' }}>
                                 {n.type.replace(/_/g, ' ')}
@@ -54,7 +54,7 @@ const NotificationDrawer = () => {
                             {n.message}
                         </p>
                         <div style={{ marginTop: '8px', fontSize: '11px', color: '#94A3B8', fontWeight: 500 }}>
-                            {new Date(n.createdAt).toLocaleString()}
+                            {new Date(n.createdAt || Date.now()).toLocaleString()}
                         </div>
                     </div>
                 ))}

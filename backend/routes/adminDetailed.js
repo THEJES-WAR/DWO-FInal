@@ -4,7 +4,7 @@ const { getCollection } = require('../db');
 
 const router = express.Router();
 
-// Middleware to verify Admin
+/* ─── Middleware ─── */
 const verifyAdmin = (req, res, next) => {
   const user = req.headers['x-user'];
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
@@ -18,7 +18,7 @@ const verifyAdmin = (req, res, next) => {
   }
 };
 
-// Map patient status to a human-readable care stage
+/* ─── Helpers ─── */
 function statusToStage(status) {
   const map = {
     'registered':        'Arrival / Registration',
@@ -34,7 +34,6 @@ function statusToStage(status) {
   return map[status] || status;
 }
 
-// Funnel position (0-7)
 function statusToFunnelIdx(status) {
   const map = {
     'registered': 0,
@@ -55,29 +54,36 @@ router.get('/detailed-workflow', verifyAdmin, async (req, res) => {
     const doctorsColl  = getCollection('doctors');
     const nursesColl   = getCollection('nurses');
 
-    // All non-discharged active patients
-    const allPatients  = await patientsColl.find({}).toArray();
+    // Only include patients who have actually started the care workflow (nurse assigned / symptoms submitted)
+    const allPatients = await patientsColl.find({
+      status: { $ne: 'registered' },
+      assignedNurse: { $exists: true, $ne: null }
+    }).toArray();
+
     const active       = allPatients.filter(p => p.status !== 'discharged');
     const totalDoctors = await doctorsColl.countDocuments({});
     const totalNurses  = await nursesColl.countDocuments({});
 
-    // Build funnel data from actual patient statuses
     const funnelData = [
-      { name: 'Registration',    count: 0 },
-      { name: 'Nurse Check-in',  count: 0 },
-      { name: 'Doctor Select',   count: 0 },
-      { name: 'Consultation',    count: 0 },
-      { name: 'Billing',         count: 0 },
-      { name: 'Pre-Discharge',   count: 0 },
-      { name: 'Discharged',      count: 0 },
+      { name: 'Nurse Check-in', count: 0 },
+      { name: 'Doctor Select',  count: 0 },
+      { name: 'Consultation',   count: 0 },
+      { name: 'Billing',        count: 0 },
+      { name: 'Pre-Discharge',  count: 0 },
+      { name: 'Discharged',     count: 0 },
     ];
 
     allPatients.forEach(p => {
-      const idx = statusToFunnelIdx(p.status);
-      if (funnelData[idx]) funnelData[idx].count++;
+      let idx = statusToFunnelIdx(p.status);
+      // Adjust index because we removed 'Registration' (idx 0) from the funnel display
+      const adjustedIdx = idx - 1; 
+      if (adjustedIdx >= 0 && funnelData[adjustedIdx]) {
+        funnelData[adjustedIdx].count++;
+      } else if (p.status === 'discharged') {
+        funnelData[5].count++; // Manual safeguard for discharged
+      }
     });
 
-    // Dept breakdown based on assigned doctor specialization
     const deptMap = {};
     active.forEach(p => {
       const dept = p.assignedDoctor?.specialization || 'General';
@@ -85,7 +91,6 @@ router.get('/detailed-workflow', verifyAdmin, async (req, res) => {
     });
     const deptData = Object.entries(deptMap).map(([name, value]) => ({ name, value }));
 
-    // Table data — sanitized list of all patients
     const tableData = allPatients.map(p => ({
       _id: p._id.toString(),
       patientId: p._id.toString(),
@@ -115,7 +120,6 @@ router.get('/detailed-workflow', verifyAdmin, async (req, res) => {
       funnelData,
       deptData,
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -126,17 +130,30 @@ router.get('/detailed-workflow', verifyAdmin, async (req, res) => {
 router.get('/live-patients', verifyAdmin, async (req, res) => {
   try {
     const patientsColl = getCollection('patients');
-    const patients = await patientsColl.find({ status: { $ne: 'discharged' } }).toArray();
+
+    // Only patients who have submitted symptoms (nurse assigned) and are in the active pipeline
+    const ACTIVE_STATUSES = [
+      'pending_vitals', 'vitals_scheduled', 'vitals_collected',
+      'doctor_pending', 'billing_pending', 'pharmacy_pending',
+      'payment_completed', 'discharged'
+    ];
+
+    const patients = await patientsColl.find({
+      assignedNurse: { $exists: true, $ne: null },
+      status: { $in: ACTIVE_STATUSES }
+    }).toArray();
+
     res.json(patients.map(p => ({
       id: p._id.toString(),
       name: p.name,
       email: p.email,
       status: p.status,
       stage: statusToStage(p.status),
-      assignedNurse: p.assignedNurse,
-      assignedDoctor: p.assignedDoctor,
-      issue: p.issue,
-      createdAt: p.createdAt || p._id.getTimestamp(),
+      assignedNurse: p.assignedNurse || null,
+      assignedDoctor: p.assignedDoctor || null,
+      issue: p.issue || null,
+      doctorVisit: p.doctorVisit || null,
+      createdAt: p.createdAt || null,
     })));
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -179,6 +196,60 @@ router.get('/staff', verifyAdmin, async (req, res) => {
   }
 });
 
+/* ─── GET /api/admin-new/all-appointments ─── */
+router.get('/all-appointments', verifyAdmin, async (req, res) => {
+  try {
+    const apptColl    = getCollection('appointments');
+    const patientColl = getCollection('patients');
+
+    const now   = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    const allAppts = await apptColl.find({}).sort({ date: 1, time: 1 }).toArray();
+
+    const enriched = await Promise.all(allAppts.map(async (appt) => {
+      let staffName = appt.doctorName || appt.nurseName || appt.staffName || 'Unknown Staff';
+      let staffRole = appt.staffRole || (appt.doctorEmail ? 'Doctor' : appt.nurseEmail ? 'Nurse' : 'Staff');
+      let patientName = appt.patientName || appt.patientEmail || 'Unknown';
+
+      if (appt.patientEmail && (!appt.patientName || appt.patientName === 'Unknown')) {
+        const p = await patientColl.findOne({ email: appt.patientEmail }, { projection: { name: 1 } });
+        if (p) patientName = p.name;
+      }
+
+      const apptDateTime = new Date(`${appt.date}T${appt.time || '00:00'}:00`);
+      const isOverdue = apptDateTime < now && !['completed','cancelled','Cancelled_By_Patient'].includes(appt.status);
+      const isMissed  = apptDateTime < now && appt.status === 'booked';
+      const isToday   = appt.date === today;
+
+      return {
+        id: appt._id.toString(),
+        date: appt.date,
+        time: appt.time || '09:00',
+        status: appt.status,
+        patientName,
+        patientEmail: appt.patientEmail || '',
+        staffName,
+        staffRole,
+        specialization: appt.specialization || appt.department || '',
+        isOverdue,
+        isMissed,
+        isToday,
+        apptDateTime: apptDateTime.toISOString(),
+      };
+    }));
+
+    const alerts    = enriched.filter(a => a.isMissed);
+    const upcoming  = enriched.filter(a => !a.isMissed && !['completed','cancelled','Cancelled_By_Patient'].includes(a.status));
+    const completed = enriched.filter(a => ['completed','cancelled','Cancelled_By_Patient'].includes(a.status));
+
+    res.json({ all: enriched, alerts, upcoming, completed, total: allAppts.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 /* ─── POST /api/admin-new/remind ─── */
 router.post('/remind', verifyAdmin, async (req, res) => {
   try {
@@ -191,7 +262,7 @@ router.post('/remind', verifyAdmin, async (req, res) => {
       patientId: patientId || null,
       type: 'admin_reminder',
       senderName: 'System Admin',
-      message: message || `Admin Reminder: Please attend to your pending patient task.`,
+      message: message || 'Admin Reminder: Please attend to your pending patient task.',
       createdAt: new Date(),
       read: false,
     };
@@ -199,12 +270,8 @@ router.post('/remind', verifyAdmin, async (req, res) => {
     const result = await notificationsColl.insertOne(newNote);
     const saved  = { ...newNote, _id: result.insertedId.toString() };
 
-    // Emit to correct socket room
     if (req.io) {
-      // Patient room: patient:id, Doctor room: doctor:id
-      const room = `${targetRole.toLowerCase()}:${targetId}`;
-      req.io.to(room).emit('admin:reminder', saved);
-      // Also try generic patient socket room used in other parts of app
+      req.io.to(`${targetRole.toLowerCase()}:${targetId}`).emit('admin:reminder', saved);
       if (targetRole === 'Patient') {
         req.io.to(targetId).emit('admin:reminder', saved);
       }

@@ -402,8 +402,40 @@ router.post('/pay-bill', verifyUser, verifyRole(['Patient']), async (req, res) =
 router.get('/notifications', verifyUser, verifyRole(['Patient', 'Nurse', 'Doctor']), async (req, res) => {
     try {
         const notificationsColl = await getCollection('notifications');
-        const notes = await notificationsColl.find({ recipientId: req.user._id.toString() }).sort({ timestamp: -1 }).toArray();
+        const notes = await notificationsColl.find({ recipientId: req.user._id.toString() }).sort({ createdAt: -1 }).limit(20).toArray();
         res.json(notes);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/**
+ * PUT /api/patient/notifications/mark-read
+ */
+router.put('/notifications/mark-read', verifyUser, verifyRole(['Patient', 'Nurse', 'Doctor']), async (req, res) => {
+    try {
+        const notificationsColl = getCollection('notifications');
+        await notificationsColl.updateMany(
+            { recipientId: req.user._id.toString() },
+            { $set: { read: true } }
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/**
+ * PUT /api/patient/notifications/:id/mark-read
+ */
+router.put('/notifications/:id/mark-read', verifyUser, verifyRole(['Patient', 'Nurse', 'Doctor']), async (req, res) => {
+    try {
+        const notificationsColl = getCollection('notifications');
+        await notificationsColl.updateOne(
+            { _id: new ObjectId(req.params.id), recipientId: req.user._id.toString() },
+            { $set: { read: true } }
+        );
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }

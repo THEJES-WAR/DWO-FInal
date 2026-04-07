@@ -8,8 +8,6 @@ const { logNotification } = require('../utils/notifications');
 
 const router = express.Router();
 
-// Shared normalization functions removed and replaced by imports from availability.js
-
 /**
  * GET /api/nurse/dashboard
  */
@@ -50,6 +48,7 @@ router.get('/patients', verifyUser, verifyRole(['Nurse']), async (req, res) => {
             billing: p.billing,
             nurseVisit: p.nurseVisit,
             vitalsProcess: p.vitalsProcess || null,
+            prescriptions: p.prescriptions || [],
             createdAt: p.createdAt || null
         })));
     } catch (err) {
@@ -75,15 +74,11 @@ router.put('/collect-vitals', verifyUser, verifyRole(['Nurse']), async (req, res
             notes
         } = req.body;
         const patientsColl = getCollection('patients');
-        const vitalsColl = getCollection('vitals');
         const patient = await patientsColl.findOne({ _id: new ObjectId(patientId) });
 
         if (!patient) return res.status(404).json({ error: 'Patient not found' });
         if (patient.assignedNurse?.id !== req.user._id.toString()) {
             return res.status(403).json({ error: 'This patient is not assigned to you' });
-        }
-        if (!patient.nurseVisit?.date || !patient.nurseVisit?.time) {
-            return res.status(400).json({ error: 'Patient has not booked a nurse visit yet' });
         }
 
         const vitalsPayload = {
@@ -95,45 +90,85 @@ router.put('/collect-vitals', verifyUser, verifyRole(['Nurse']), async (req, res
             temperature,
             oxygenSaturation,
             notes: notes || '',
-            collectedAt: new Date(),
-            collectedBy: {
-                id: req.user._id.toString(),
-                name: req.user.name,
-                role: req.user.role
-            },
-            status: 'completed'
-        };
-
-                const historyObject = {
-            visitId: new ObjectId(),
-            dischargedAt: new Date(),
-            issue: patient.issue,
-            vitals: patient.vitals,
-            nurseVisit: patient.nurseVisit,
-            doctorVisit: patient.doctorVisit,
-            assignedNurse: patient.assignedNurse,
-            assignedDoctor: patient.assignedDoctor,
-            prescriptions: patient.prescriptions,
-            billing: patient.billing,
-            doctorFeedback: patient.doctorFeedback,
-            vitalsProcess: patient.vitalsProcess
+            collectedAt: new Date()
         };
 
         await patientsColl.updateOne(
             { _id: new ObjectId(patientId) },
             { 
-                $set: { status: 'registered' },
-                $push: { visitHistory: historyObject },
-                $unset: {
-                    issue: "", vitals: "", nurseVisit: "", doctorVisit: "",
-                    assignedNurse: "", assignedDoctor: "", prescriptions: "",
-                    billing: "", doctorFeedback: "", vitalsProcess: "",
-                    isHistorical: "", dischargedAt: ""
+                $set: { 
+                    status: 'vitals_collected',
+                    vitals: vitalsPayload
                 }
             }
         );
 
-        emitToPatient(req.io, patientId, 'patient:discharged', { message: 'You have been discharged. Your visit details are safely archived. Thank you for choosing MedPlus+.' });
+        emitToPatient(req.io, patientId, 'vitals:collected', { vitals: vitalsPayload });
+        await logNotification(patientId, 'Patient', 'Your vitals have been recorded. Please choose your specialist.', 'success', req.user.name);
+
+        res.json({ message: 'Vitals collected successfully.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/**
+ * PUT /api/nurse/discharge-patient
+ * Final Stage: Nurse discharges patient after billing
+ */
+router.put('/discharge-patient', verifyUser, verifyRole(['Nurse']), async (req, res) => {
+    try {
+        const { patientId } = req.body;
+        const patientsColl = getCollection('patients');
+        const patient = await patientsColl.findOne({ _id: new ObjectId(patientId) });
+
+        if (!patient) return res.status(404).json({ error: 'Patient not found' });
+
+        const historyObject = {
+            visitId: new ObjectId(),
+            date: new Date().toISOString(), // Fix "Invalid Date"
+            dischargedAt: new Date(),
+            nursePhase: {
+                assignedAt: patient.issue?.submittedAt,
+                vitalsAt: patient.vitals?.collectedAt,
+                nurseName: patient.assignedNurse?.name,
+                vitals: patient.vitals
+            },
+            doctorPhase: {
+                doctorName: patient.assignedDoctor?.name,
+                specialization: patient.assignedDoctor?.specialization,
+                feedback: patient.doctorFeedback,
+                prescriptions: patient.prescriptions,
+                completedAt: patient.consultationCompletedAt
+            },
+            billingPhase: {
+                billNo: patient.billing?.billNo,
+                totalAmount: patient.billing?.totalAmount,
+                consultationFee: patient.billing?.consultationFee,
+                prescriptionFee: patient.billing?.prescriptionFee,
+                paymentMethod: patient.billing?.method,
+                paidAt: patient.billing?.paidAt
+            }
+        };
+
+        await patientsColl.updateOne(
+            { _id: new ObjectId(patientId) },
+            { 
+                $set: { 
+                    status: 'registered',
+                    visitHistory: patient.visitHistory ? [...patient.visitHistory, historyObject] : [historyObject]
+                },
+                $unset: {
+                    issue: "", vitals: "", nurseVisit: "", doctorVisit: "",
+                    assignedNurse: "", assignedDoctor: "", prescriptions: "",
+                    billing: "", doctorFeedback: "", vitalsProcess: "",
+                    isHistorical: "", dischargedAt: "", pharmacyStatus: ""
+                }
+            }
+        );
+
+        emitToPatient(req.io, patientId, 'patient:discharged', { message: 'You have been discharged. Your visit details are safely archived.' });
+        await logNotification(patientId, 'Patient', 'You have been discharged safely.', 'success', req.user.name);
 
         res.json({ message: 'Patient discharged successfully.' });
     } catch (err) {
@@ -157,7 +192,6 @@ router.post('/book-patient-slot', verifyUser, verifyRole(['Nurse']), async (req,
 
         if (!nurse || !patient) return res.status(404).json({ error: 'Nurse or Patient not found' });
 
-        // Logic to find the next available slot
         const availability = (nurse.availability && nurse.availability.length > 0)
             ? nurse.availability
             : generateDefaultAvailability(7);
@@ -171,7 +205,6 @@ router.post('/book-patient-slot', verifyUser, verifyRole(['Nurse']), async (req,
             return res.status(400).json({ error: 'No upcoming slots available in your schedule.' });
         }
 
-        // Find a slot that isn't already booked
         const bookedPatients = await patientsColl.find({
             'assignedNurse.id': nurseId,
             'nurseVisit.date': normalizeDate(currentAvailability.date),
@@ -203,11 +236,28 @@ router.post('/book-patient-slot', verifyUser, verifyRole(['Nurse']), async (req,
 
         emitToPatient(req.io, patientId, 'visit:confirmed', { date: normalizeDate(currentAvailability.date), time: nextSlot });
         await logNotification(patientId, 'Patient', `Nurse visit scheduled for ${normalizeDate(currentAvailability.date)} at ${nextSlot}.`, 'info', req.user.name);
-        await logNotification(req.user._id, 'Nurse', `Scheduled visit for ${patient.name} at ${nextSlot}.`, 'info', req.user.name);
 
         res.json({ message: `Slot booked for ${normalizeDate(currentAvailability.date)} at ${nextSlot}.`, date: normalizeDate(currentAvailability.date), time: nextSlot });
     } catch (err) {
         res.status(500).json({ error: 'Server error: ' + err.message });
+    }
+});
+
+/**
+ * GET /api/nurse/notifications
+ */
+router.get('/notifications', verifyUser, verifyRole(['Nurse']), async (req, res) => {
+    try {
+        const notificationsColl = getCollection('notifications');
+        const nurseId = req.user._id.toString();
+        const notes = await notificationsColl
+            .find({ recipientId: nurseId })
+            .sort({ createdAt: -1 })
+            .limit(20)
+            .toArray();
+        res.json(notes);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
     }
 });
 
