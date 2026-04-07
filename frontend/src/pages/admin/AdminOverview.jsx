@@ -31,12 +31,13 @@ const AdminOverview = () => {
   const [lastSync, setLastSync] = useState(null);
   const user = JSON.parse(localStorage.getItem('user'));
 
-  useEffect(() => { fetchData(); const t = setInterval(fetchData, 30000); return () => clearInterval(t); }, []);
+  useEffect(() => { fetchData(); const t = setInterval(fetchData, 3000); return () => clearInterval(t); }, []);
 
   const fetchData = async () => {
     try {
+      const freshUser = JSON.parse(localStorage.getItem('user'));
       const res = await fetch('http://localhost:5000/api/admin-new/detailed-workflow', {
-        headers: { 'x-user': JSON.stringify(user) }
+        headers: { 'x-user': JSON.stringify(freshUser) }
       });
       if (res.ok) { setData(await res.json()); setLastSync(new Date()); }
     } catch (e) { console.error(e); }

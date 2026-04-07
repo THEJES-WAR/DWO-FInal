@@ -11,68 +11,68 @@ const seedData = {
     {
       specialization: "Cardiology",
       doctors: [
-        { name: "Dr. Arjun Mehta" },
-        { name: "Dr. Priya Nair" },
-        { name: "Dr. Kiran Reddy" },
-        { name: "Dr. Sneha Iyer" },
-        { name: "Dr. Rahul Verma" }
+        { name: "Dr. Arjun Mehta", phone: "+91 98400 10001" },
+        { name: "Dr. Priya Nair", phone: "+91 98400 10002" },
+        { name: "Dr. Kiran Reddy", phone: "+91 98400 10003" },
+        { name: "Dr. Sneha Iyer", phone: "+91 98400 10004" },
+        { name: "Dr. Rahul Verma", phone: "+91 98400 10005" }
       ]
     },
     {
       specialization: "Neurology",
       doctors: [
-        { name: "Dr. Amit Sharma" },
-        { name: "Dr. Kavya Menon" },
-        { name: "Dr. Rakesh Gupta" },
-        { name: "Dr. Divya Pillai" },
-        { name: "Dr. Ankit Jain" }
+        { name: "Dr. Amit Sharma", phone: "+91 98400 10006" },
+        { name: "Dr. Kavya Menon", phone: "+91 98400 10007" },
+        { name: "Dr. Rakesh Gupta", phone: "+91 98400 10008" },
+        { name: "Dr. Divya Pillai", phone: "+91 98400 10009" },
+        { name: "Dr. Ankit Jain", phone: "+91 98400 10010" }
       ]
     },
     {
       specialization: "Orthopedics",
       doctors: [
-        { name: "Dr. Vikram Singh" },
-        { name: "Dr. Pooja Desai" },
-        { name: "Dr. Manoj Kumar" },
-        { name: "Dr. Neha Kapoor" },
-        { name: "Dr. Suresh Babu" }
+        { name: "Dr. Vikram Singh", phone: "+91 98400 10011" },
+        { name: "Dr. Pooja Desai", phone: "+91 98400 10012" },
+        { name: "Dr. Manoj Kumar", phone: "+91 98400 10013" },
+        { name: "Dr. Neha Kapoor", phone: "+91 98400 10014" },
+        { name: "Dr. Suresh Babu", phone: "+91 98400 10015" }
       ]
     },
     {
       specialization: "Pediatrics",
       doctors: [
-        { name: "Dr. Anjali Rao" },
-        { name: "Dr. Rohit Das" },
-        { name: "Dr. Meera Nair" },
-        { name: "Dr. Varun Khanna" },
-        { name: "Dr. Shalini Gupta" }
+        { name: "Dr. Anjali Rao", phone: "+91 98400 10016" },
+        { name: "Dr. Rohit Das", phone: "+91 98400 10017" },
+        { name: "Dr. Meera Nair", phone: "+91 98400 10018" },
+        { name: "Dr. Varun Khanna", phone: "+91 98400 10019" },
+        { name: "Dr. Shalini Gupta", phone: "+91 98400 10020" }
       ]
     },
     {
       specialization: "Dermatology",
       doctors: [
-        { name: "Dr. Aditi Sharma" },
-        { name: "Dr. Karthik Subramanian" },
-        { name: "Dr. Nisha Verma" },
-        { name: "Dr. Rajesh Iyer" },
-        { name: "Dr. Snehal Patil" }
+        { name: "Dr. Aditi Sharma", phone: "+91 98400 10021" },
+        { name: "Dr. Karthik Subramanian", phone: "+91 98400 10022" },
+        { name: "Dr. Nisha Verma", phone: "+91 98400 10023" },
+        { name: "Dr. Rajesh Iyer", phone: "+91 98400 10024" },
+        { name: "Dr. Snehal Patil", phone: "+91 98400 10025" }
       ]
     }
   ],
   nurses: {
     headNurse: [
-      { name: "Lakshmi" },
-      { name: "Mary" },
-      { name: "Kavitha" },
-      { name: "Sunita" },
-      { name: "Asha" }
+      { name: "Lakshmi", phone: "+91 94400 20001" },
+      { name: "Mary", phone: "+91 94400 20002" },
+      { name: "Kavitha", phone: "+91 94400 20003" },
+      { name: "Sunita", phone: "+91 94400 20004" },
+      { name: "Asha", phone: "+91 94400 20005" }
     ],
     helperNurse: [
-      { name: "Rani" },
-      { name: "Geeta" },
-      { name: "Pooja" },
-      { name: "Latha" },
-      { name: "Rekha" }
+      { name: "Rani", phone: "+91 94400 20006" },
+      { name: "Geeta", phone: "+91 94400 20007" },
+      { name: "Pooja", phone: "+91 94400 20008" },
+      { name: "Latha", phone: "+91 94400 20009" },
+      { name: "Rekha", phone: "+91 94400 20010" }
     ]
   }
 };
@@ -102,6 +102,7 @@ async function seedDatabase() {
           name: doc.name,
           specialization: spec.specialization,
           email,
+          phone: doc.phone || '+91 98400 00000',
           password: hashedPassword,
           createdAt: new Date()
         };
@@ -129,6 +130,7 @@ async function seedDatabase() {
         name: `Nurse ${nurse.name}`,
         type: 'Head Nurse',
         email,
+        phone: nurse.phone || '+91 94400 00000',
         password: hashedPassword,
         createdAt: new Date()
       };
@@ -152,6 +154,7 @@ async function seedDatabase() {
         name: `Helper ${nurse.name}`,
         type: 'Helper Nurse',
         email,
+        phone: nurse.phone || '+91 94400 00000',
         password: hashedPassword,
         createdAt: new Date()
       };

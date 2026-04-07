@@ -28,13 +28,20 @@ const ToastItem = ({ toast }) => {
   const [progress, setProgress] = useState(100);
 
   useEffect(() => {
-    // 10s drain
+    // 5s drain
     const interval = setInterval(() => {
-      setProgress(prev => Math.max(0, prev - (100 / 100))); // roughly 10s 
+      setProgress(prev => Math.max(0, prev - (100 / 50))); // 50 * 100ms = 5000ms
     }, 100);
 
-    return () => clearInterval(interval);
-  }, []);
+    const timer = setTimeout(() => {
+      removeToast(toast.id);
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timer);
+    };
+  }, [removeToast, toast.id]);
 
   return (
     <div style={{

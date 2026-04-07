@@ -12,9 +12,10 @@ const TestUploader = ({ patient, onUploadComplete }) => {
         if (!testName || !result) return;
         setLoading(true);
         try {
+            const user = JSON.parse(localStorage.getItem('user'));
             const res = await fetch(`http://localhost:5000/api/nurse/upload-test-results`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'x-user': localStorage.getItem('user') },
+                headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(user) },
                 body: JSON.stringify({ patientId: patient.id, testName, result })
             });
             if (res.ok) {

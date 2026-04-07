@@ -14,6 +14,7 @@ const appointmentRoutes = require('./routes/appointments');
 const workflowRoutes = require('./routes/workflow');
 const patientRoutes = require('./routes/patient.routes');
 const nurseRoutes = require('./routes/nurse.routes');
+const doctorRoutes = require('./routes/doctor.routes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -44,6 +45,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/workflow', workflowRoutes);
 app.use('/api/patient', patientRoutes);
 app.use('/api/nurse', nurseRoutes);
+app.use('/api/doctor', doctorRoutes);
 
 app.get('/', (req, res) => {
     res.send('MedPlus+ API is running');

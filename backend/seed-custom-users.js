@@ -123,6 +123,12 @@ async function seedCustomUsers() {
         email: user.email,
         role: 'Nurse',
         type: user.type,
+        ward: ['General', 'ICU', 'Pediatrics', 'Emergency'][Math.floor(Math.random() * 4)],
+        contact: '98765' + Math.floor(10000 + Math.random() * 90000),
+        availability: [
+          { date: '2026-04-06', slots: ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'] },
+          { date: '2026-04-07', slots: ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'] }
+        ]
       })
     );
 
@@ -136,6 +142,10 @@ async function seedCustomUsers() {
         role: 'Doctor',
         specialization: user.specialization,
         status: 'Available',
+        availability: [
+          { date: '2026-04-06', slots: ['09:30', '10:30', '11:30', '14:30', '15:30', '16:30'] },
+          { date: '2026-04-07', slots: ['09:30', '10:30', '11:30', '14:30', '15:30', '16:30'] }
+        ]
       })
     );
 

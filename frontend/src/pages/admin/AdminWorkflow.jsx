@@ -1,291 +1,292 @@
-import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Clock, Eye, RefreshCw, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bell, Send, X, Clock, AlertTriangle, CheckCircle2, RefreshCw, Activity, ChevronRight, Loader } from 'lucide-react';
 
-const STAGES = [
-  'Arrival', 'Nurse Check-in', 'Doctor Consultation',
-  'Prescription', 'Nurse Medication', 'Lab/Scan',
-  'Billing', 'Discharge'
-];
-
-const STAGE_ABBR = ['ARR', 'CHK', 'DOC', 'RX', 'MED', 'LAB', 'BILL', 'DC'];
-
-const statusBadge = (status) => {
-  const map = {
-    'Completed': { bg: '#F0FDF4', color: '#16A34A', border: '#BBF7D0' },
-    'In Progress': { bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' },
-    'Delayed':    { bg: '#FFF7ED', color: '#C2410C', border: '#FED7AA' },
-    'Critical':   { bg: '#FEF2F2', color: '#DC2626', border: '#FECACA' },
+/* ─── Status → badge ─── */
+const statusMeta = (status) => {
+  const m = {
+    'registered':        { label: 'Registered',       bg: '#F8FAFC', color: '#64748B', border: '#E2E8F0' },
+    'pending_vitals':    { label: 'Pending Vitals',    bg: '#FFF7ED', color: '#C2410C', border: '#FED7AA' },
+    'vitals_scheduled':  { label: 'Vitals Scheduled',  bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' },
+    'vitals_collected':  { label: 'Vitals Done',       bg: '#ECFDF5', color: '#065F46', border: '#A7F3D0' },
+    'doctor_pending':    { label: 'With Doctor',       bg: '#F5F3FF', color: '#5B21B6', border: '#DDD6FE' },
+    'billing_pending':   { label: 'Billing',           bg: '#FEF2F2', color: '#DC2626', border: '#FECACA' },
+    'pharmacy_pending':  { label: 'Pharmacy',          bg: '#FFF7ED', color: '#C2410C', border: '#FED7AA' },
+    'payment_completed': { label: 'Payment Done',      bg: '#F0FDF4', color: '#166534', border: '#BBF7D0' },
+    'discharged':        { label: 'Discharged',        bg: '#F1F5F9', color: '#475569', border: '#CBD5E1' },
   };
-  return map[status] || { bg: '#F8FAFC', color: '#64748B', border: '#E2E8F0' };
+  return m[status] || { label: status, bg: '#F8FAFC', color: '#64748B', border: '#E2E8F0' };
 };
 
+/* ─── Stage pipeline display ─── */
+const PIPELINE = [
+  'registered', 'pending_vitals', 'vitals_collected', 'doctor_pending',
+  'billing_pending', 'payment_completed', 'discharged'
+];
+
 const AdminWorkflow = () => {
-  const [journeys, setJourneys] = useState([]);
+  const [patients, setPatients] = useState([]);
   const [loading, setLoading]   = useState(true);
-  const [filter, setFilter]     = useState('All');
-  const user = JSON.parse(localStorage.getItem('user'));
+  const [lastSync, setLastSync] = useState(null);
+  const [search, setSearch]     = useState('');
+  const [reminderTarget, setReminderTarget] = useState(null); // { patientId, patientName, role, targetId, targetName }
+  const [reminderMsg, setReminderMsg]       = useState('');
+  const [sending, setSending]   = useState(false);
+  const [toasts, setToasts]     = useState([]);
+  const toastId = useRef(0);
 
-  useEffect(() => { fetchData(); const t = setInterval(fetchData, 30000); return () => clearInterval(t); }, []);
+  useEffect(() => {
+    fetchPatients();
+    const t = setInterval(fetchPatients, 3000);
+    return () => clearInterval(t);
+  }, []);
 
-  const fetchData = async () => {
+  const fetchPatients = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/admin-new/detailed-workflow', {
-        headers: { 'x-user': JSON.stringify(user) }
+      const freshUser = JSON.parse(localStorage.getItem('user'));
+      const res = await fetch('http://localhost:5000/api/admin-new/live-patients', {
+        headers: { 'x-user': JSON.stringify(freshUser) }
       });
-      if (res.ok) { const d = await res.json(); setJourneys(d.tableData); }
+      if (res.ok) { setPatients(await res.json()); setLastSync(new Date()); }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
 
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: '12px', color: '#64748B' }}>
-      <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite' }} />
-      <span style={{ fontWeight: 600 }}>Loading patient journeys…</span>
-    </div>
-  );
-
-  const FILTERS = ['All', 'Critical', 'Delayed', 'In Progress', 'Completed'];
-  const filtered = filter === 'All' ? journeys : journeys.filter(j => j.status === filter);
-
-  const counts = {
-    All: journeys.length,
-    Critical: journeys.filter(j => j.status === 'Critical').length,
-    Delayed:  journeys.filter(j => j.status === 'Delayed').length,
-    'In Progress': journeys.filter(j => j.status === 'In Progress').length,
-    Completed: journeys.filter(j => j.status === 'Completed').length,
+  const addToast = (msg, type = 'success') => {
+    const id = ++toastId.current;
+    setToasts(prev => [...prev, { id, msg, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
   };
 
+  const sendReminder = async () => {
+    if (!reminderMsg.trim() || !reminderTarget) return;
+    setSending(true);
+    try {
+      const freshUser = JSON.parse(localStorage.getItem('user'));
+      const res = await fetch('http://localhost:5000/api/admin-new/remind', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(freshUser) },
+        body: JSON.stringify({
+          patientId: reminderTarget.patientId,
+          targetId: reminderTarget.targetId,
+          targetRole: reminderTarget.role,
+          targetName: reminderTarget.targetName,
+          message: reminderMsg,
+        })
+      });
+      if (res.ok) {
+        addToast(`Reminder sent to ${reminderTarget.targetName}`);
+        setReminderTarget(null);
+        setReminderMsg('');
+      } else {
+        addToast('Failed to send reminder', 'error');
+      }
+    } catch { addToast('Network error', 'error'); }
+    finally { setSending(false); }
+  };
+
+  const filtered = patients.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    (p.issue?.description || '').toLowerCase().includes(search.toLowerCase())
+  );
+
+  /* stage counts */
+  const stageCounts = PIPELINE.reduce((acc, s) => {
+    acc[s] = patients.filter(p => p.status === s).length;
+    return acc;
+  }, {});
+
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px', fontFamily: "'Inter', sans-serif" }}>
+
+      {/* Toast stack */}
+      <div style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {toasts.map(t => (
+          <div key={t.id} style={{ background: t.type === 'error' ? '#FEF2F2' : '#F0FDF4', border: `1px solid ${t.type === 'error' ? '#FECACA' : '#BBF7D0'}`, color: t.type === 'error' ? '#DC2626' : '#166534', padding: '14px 20px', borderRadius: '14px', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', animation: 'slideIn 0.3s ease' }}>
+            <Bell size={15} /> {t.msg}
+          </div>
+        ))}
+      </div>
+
+      {/* Reminder Modal */}
+      {reminderTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9990, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#FFFFFF', borderRadius: '24px', padding: '36px', width: '480px', boxShadow: '0 24px 48px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0F172A' }}>Send Reminder</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748B', fontWeight: 500 }}>This will appear as a 5-second notification on their portal</p>
+              </div>
+              <button onClick={() => setReminderTarget(null)} style={{ background: '#F1F5F9', border: 'none', borderRadius: '8px', padding: '8px', cursor: 'pointer' }}><X size={16} /></button>
+            </div>
+
+            {/* Recipient info */}
+            <div style={{ background: '#F8FAFC', borderRadius: '14px', padding: '16px', marginBottom: '20px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', marginBottom: '4px' }}>Sending to</div>
+              <div style={{ fontWeight: 700, color: '#1E293B', fontSize: '15px' }}>{reminderTarget.targetName}</div>
+              <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>Role: {reminderTarget.role} · For patient: <strong>{reminderTarget.patientName}</strong></div>
+            </div>
+
+            <textarea
+              value={reminderMsg} onChange={e => setReminderMsg(e.target.value)}
+              placeholder="Type your reminder message…"
+              rows={4}
+              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E2E8F0', fontSize: '14px', fontWeight: 500, resize: 'none', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+              onFocus={e => e.target.style.borderColor = '#6366F1'}
+              onBlur={e => e.target.style.borderColor = '#E2E8F0'}
+            />
+
+            {/* Quick messages */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+              {[
+                'Please attend to the patient immediately.',
+                'Patient vitals need to be checked now.',
+                'Prescription is ready for review.',
+                'Please expedite the discharge process.',
+              ].map(q => (
+                <button key={q} onClick={() => setReminderMsg(q)}
+                  style={{ padding: '5px 10px', borderRadius: '8px', border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: '11px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
+                  {q}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={sendReminder}
+              disabled={sending || !reminderMsg.trim()}
+              style={{ width: '100%', marginTop: '20px', padding: '14px', background: !reminderMsg.trim() ? '#E2E8F0' : '#6366F1', color: !reminderMsg.trim() ? '#94A3B8' : 'white', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 800, cursor: !reminderMsg.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              {sending ? <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={16} />}
+              {sending ? 'Sending…' : 'Send Reminder Now'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.3px' }}>
-            Live Patient Workflow
-          </h2>
+          <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.3px' }}>Live Patient Workflow</h2>
           <p style={{ fontSize: '13px', color: '#64748B', fontWeight: 500, margin: '4px 0 0' }}>
-            Tracking {journeys.length} patients across 8 care stages · 30s auto-refresh
+            {patients.length} active patients · Auto-refreshes every 3s
+            {lastSync && <span style={{ marginLeft: '8px', color: '#10B981' }}>· Last sync: {lastSync.toLocaleTimeString()}</span>}
           </p>
         </div>
-
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          {[
-            { label: 'Done',    color: '#22C55E' },
-            { label: 'Active',  color: '#3B82F6' },
-            { label: 'Delayed', color: '#EF4444' },
-            { label: 'Pending', color: '#CBD5E1' },
-          ].map(l => (
-            <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#475569', fontWeight: 600 }}>
-              <div style={{ width: '9px', height: '9px', borderRadius: '50%', background: l.color }}></div>
-              {l.label}
-            </div>
-          ))}
-        </div>
+        <input
+          type="text" placeholder="Search patients…" value={search} onChange={e => setSearch(e.target.value)}
+          style={{ padding: '9px 16px', borderRadius: '20px', border: '1px solid #E2E8F0', fontSize: '13px', width: '220px', outline: 'none', fontFamily: 'inherit' }}
+        />
       </div>
 
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-        {FILTERS.map(f => {
-          const active = filter === f;
-          const badge  = statusBadge(f);
+      {/* Pipeline funnel */}
+      <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px 24px', border: '1px solid #E2E8F0', display: 'flex', gap: '0', overflowX: 'auto' }}>
+        {PIPELINE.filter(s => s !== 'discharged').map((s, i) => {
+          const meta = statusMeta(s);
+          const count = stageCounts[s] || 0;
           return (
-            <button key={f} onClick={() => setFilter(f)} style={{
-              padding: '6px 14px', borderRadius: '20px', border: '1px solid',
-              fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-              background: active ? '#1E293B' : '#FFFFFF',
-              color:      active ? '#FFFFFF'  : '#64748B',
-              borderColor: active ? '#1E293B' : '#E2E8F0',
-              transition: 'all 0.15s',
-            }}>
-              {f}
-              <span style={{
-                marginLeft: '6px', padding: '0 6px',
-                background: active ? 'rgba(255,255,255,0.2)' : '#F1F5F9',
-                borderRadius: '10px', fontSize: '11px',
-                color: active ? '#fff' : '#64748B',
-              }}>{counts[f]}</span>
-            </button>
+            <div key={s} style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: '80px' }}>
+              <div style={{ flex: 1, textAlign: 'center', padding: '8px 4px' }}>
+                <div style={{ fontSize: '24px', fontWeight: 900, color: count > 0 ? meta.color : '#CBD5E1' }}>{count}</div>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginTop: '2px', lineHeight: 1.3 }}>{meta.label}</div>
+              </div>
+              {i < PIPELINE.length - 2 && <ChevronRight size={14} color="#CBD5E1" style={{ flexShrink: 0 }} />}
+            </div>
           );
         })}
       </div>
 
-      {/* Table */}
-      <div style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
-            <thead>
-              <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                {['Patient', 'Stage Progress', 'Status', 'Assigned Staff', 'Elapsed', 'Action'].map(h => (
-                  <th key={h} style={{
-                    padding: '11px 16px', textAlign: 'left',
-                    fontSize: '11px', fontWeight: 700, color: '#94A3B8',
-                    textTransform: 'uppercase', letterSpacing: '0.06em',
-                    whiteSpace: 'nowrap',
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#94A3B8', fontSize: '14px', fontWeight: 600 }}>
-                    No patients match this filter.
-                  </td>
-                </tr>
-              )}
-              {filtered.map((j, rowIdx) => {
-                const badge = statusBadge(j.status);
-                const isCritical = j.status === 'Critical';
-                return (
-                  <tr key={j._id} style={{
-                    borderBottom: '1px solid #F1F5F9',
-                    background: isCritical ? '#FFF9F9' : '#FFFFFF',
-                    transition: 'background 0.1s',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = isCritical ? '#FEF2F2' : '#F8FAFC'}
-                    onMouseLeave={e => e.currentTarget.style.background = isCritical ? '#FFF9F9' : '#FFFFFF'}
+      {/* Patient Cards */}
+      {loading ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', gap: '12px', color: '#64748B' }}>
+          <RefreshCw size={22} style={{ animation: 'spin 1s linear infinite' }} />
+          <span style={{ fontWeight: 600 }}>Loading patient data…</span>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px', color: '#94A3B8' }}>
+          <Activity size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
+          <p style={{ fontWeight: 600 }}>No active patients at the moment.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {filtered.map(p => {
+            const meta = statusMeta(p.status);
+            const currentStageIdx = PIPELINE.indexOf(p.status);
+            return (
+              <div key={p.id} style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px 24px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', gap: '20px', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+                
+                {/* Avatar */}
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: meta.bg, color: meta.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '18px', flexShrink: 0 }}>
+                  {p.name.charAt(0)}
+                </div>
+
+                {/* Main info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 800, fontSize: '15px', color: '#1E293B' }}>{p.name}</span>
+                    <span style={{ padding: '2px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>
+                      {meta.label}
+                    </span>
+                    {p.status === 'billing_pending' && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 800, color: '#DC2626' }}><AlertTriangle size={12} /> Needs Attention</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px', fontWeight: 500 }}>
+                    {p.issue?.description ? `Issue: ${p.issue.description.substring(0, 60)}…` : 'No issue recorded'}
+                    {p.assignedDoctor && <span style={{ marginLeft: '12px' }}>| Dr. {p.assignedDoctor.name} ({p.assignedDoctor.specialization})</span>}
+                  </div>
+                </div>
+
+                {/* Mini pipeline */}
+                <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                  {PIPELINE.slice(0, -1).map((s, i) => (
+                    <div key={s} title={statusMeta(s).label} style={{
+                      width: '8px', height: '8px', borderRadius: '50%',
+                      background: i < currentStageIdx ? '#10B981' : i === currentStageIdx ? meta.color : '#E2E8F0',
+                      transition: 'background 0.3s'
+                    }} />
+                  ))}
+                </div>
+
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  {p.assignedNurse && (
+                    <button
+                      onClick={() => { setReminderTarget({ patientId: p.id, patientName: p.name, role: 'Nurse', targetId: p.assignedNurse.id, targetName: p.assignedNurse.name }); setReminderMsg(`Reminder: Patient ${p.name} needs immediate attention.`); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#F5F3FF', border: '1px solid #DDD6FE', color: '#7C3AED', padding: '7px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#EDE9FE'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#F5F3FF'; }}
+                    >
+                      <Bell size={12} /> Remind Nurse
+                    </button>
+                  )}
+                  {p.assignedDoctor && (
+                    <button
+                      onClick={() => { setReminderTarget({ patientId: p.id, patientName: p.name, role: 'Doctor', targetId: p.assignedDoctor.id, targetName: p.assignedDoctor.name }); setReminderMsg(`Admin Reminder: Patient ${p.name} requires your attention.`); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1D4ED8', padding: '7px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#DBEAFE'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#EFF6FF'; }}
+                    >
+                      <Bell size={12} /> Remind Doctor
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setReminderTarget({ patientId: p.id, patientName: p.name, role: 'Patient', targetId: p.id, targetName: p.name }); setReminderMsg(`Admin reminder: Please check your portal for updates regarding your visit.`); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#166534', padding: '7px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#DCFCE7'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#F0FDF4'; }}
                   >
-                    {/* Patient */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{
-                          width: '32px', height: '32px', borderRadius: '50%',
-                          background: isCritical ? '#FEE2E2' : '#EFF6FF',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontWeight: 800, fontSize: '13px',
-                          color: isCritical ? '#DC2626' : '#2563EB',
-                          flexShrink: 0,
-                        }}>
-                          {j.patientName?.charAt(0)?.toUpperCase()}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#1E293B' }}>{j.patientName}</div>
-                          <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 500, marginTop: '1px' }}>
-                            <span style={{ fontFamily: 'monospace', background: '#F1F5F9', padding: '1px 5px', borderRadius: '4px', color: '#475569', fontWeight: 700 }}>
-                              {j.patientId?.slice(-6).toUpperCase()}
-                            </span>
-                            &nbsp;· {j.ward} · {j.department}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Pipeline */}
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {/* Dots row */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
-                          {/* connector line only spans the dots */}
-                          <div style={{ position: 'absolute', left: '6px', right: '6px', top: '50%', transform: 'translateY(-50%)', height: '2px', background: '#F1F5F9', zIndex: 0 }}></div>
-                          {STAGES.map((s, idx) => {
-                            const si = j.stages?.find(st => st.name === s);
-                            let dotColor = '#E2E8F0';
-                            if (si?.status === 'Done') dotColor = '#22C55E';
-                            else if (si?.status === 'In Progress') {
-                              dotColor = (j.status === 'Delayed' || j.status === 'Critical') ? '#EF4444' : '#3B82F6';
-                            }
-                            return (
-                              <div key={idx} title={`${s}: ${si ? `${si.status} · ${si.timeSpent}m` : 'Pending'}`}
-                                style={{ position: 'relative', zIndex: 1, flexShrink: 0 }}>
-                                <div style={{
-                                  width: '13px', height: '13px', borderRadius: '50%',
-                                  background: dotColor,
-                                  boxShadow: si?.status === 'In Progress' ? `0 0 0 4px ${dotColor}28` : 'none',
-                                  transition: 'all 0.2s',
-                                }}></div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {/* Stage label below the dots */}
-                        <div style={{
-                          display: 'inline-flex', alignItems: 'center',
-                          background: '#F8FAFC', border: '1px solid #E2E8F0',
-                          borderRadius: '6px', padding: '2px 8px',
-                          fontSize: '11px', fontWeight: 600, color: '#475569',
-                          whiteSpace: 'nowrap', alignSelf: 'flex-start',
-                        }}>
-                          {j.currentStage}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Status */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '4px',
-                        padding: '3px 10px', borderRadius: '20px',
-                        fontSize: '11px', fontWeight: 700,
-                        background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`,
-                      }}>
-                        {(j.status === 'Delayed' || j.status === 'Critical') && <AlertTriangle size={10} />}
-                        {j.status === 'Completed' && <CheckCircle2 size={10} />}
-                        {j.status}
-                      </span>
-                    </td>
-
-                    {/* Staff */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <div style={{ fontSize: '12.5px', fontWeight: 600 }}>
-                        {j.assignedDoctor && <div style={{ color: '#4F46E5', marginBottom: '2px' }}>{j.assignedDoctor}</div>}
-                        {j.assignedNurse  && <div style={{ color: '#64748B' }}>{j.assignedNurse}</div>}
-                        {!j.assignedDoctor && !j.assignedNurse && <span style={{ color: '#CBD5E1', fontStyle: 'italic' }}>Unassigned</span>}
-                      </div>
-                    </td>
-
-                    {/* Time */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Clock size={13} color={j.status === 'Delayed' || j.status === 'Critical' ? '#EF4444' : '#94A3B8'} />
-                        <span style={{
-                          fontSize: '14px', fontWeight: 800, lineHeight: 1,
-                          color: (j.status === 'Delayed' || j.status === 'Critical') ? '#DC2626' : '#1E293B',
-                        }}>
-                          {j.totalTime}m
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Action */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <button style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '5px',
-                        padding: '6px 12px', borderRadius: '7px',
-                        fontSize: '11.5px', fontWeight: 700,
-                        background: '#F8FAFC', color: '#475569',
-                        border: '1px solid #E2E8F0', cursor: 'pointer',
-                        transition: 'all 0.15s',
-                      }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#EFF6FF'; e.currentTarget.style.color = '#1D4ED8'; e.currentTarget.style.borderColor = '#BFDBFE'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#475569';  e.currentTarget.style.borderColor = '#E2E8F0'; }}
-                      >
-                        <Eye size={13} /> View
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    <Bell size={12} /> Remind Patient
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
+      )}
 
-        {/* Table footer */}
-        <div style={{ padding: '10px 16px', borderTop: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '12px', color: '#94A3B8', fontWeight: 500 }}>
-            Showing {filtered.length} of {journeys.length} patients
-          </span>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <span style={{ fontSize: '12px', color: '#EF4444', fontWeight: 700 }}>
-              {counts.Critical} Critical
-            </span>
-            <span style={{ fontSize: '12px', color: '#C2410C', fontWeight: 700 }}>
-              {counts.Delayed} Delayed
-            </span>
-          </div>
-        </div>
-      </div>
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+      `}</style>
     </div>
   );
 };

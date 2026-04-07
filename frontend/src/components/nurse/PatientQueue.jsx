@@ -1,43 +1,130 @@
-import React from 'react';
-import { Activity, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Activity, Clock, Beaker, CreditCard, CheckCircle2, User, Stethoscope } from 'lucide-react';
 
 const PatientQueue = ({ patients, selectedPatient, onSelect }) => {
+    const [tab, setTab] = useState('active');
+
+    // First Come First Serve Sorting (fallback to array order if no createdAt)
+    const sortedPatients = [...patients].sort((a, b) => {
+        if (a.createdAt && b.createdAt) {
+            return new Date(a.createdAt) - new Date(b.createdAt);
+        }
+        return 0; // Maintain original
+    });
+
+    const activePatients = sortedPatients.filter(p => p.status !== 'discharged');
+    const historyPatients = sortedPatients.filter(p => p.status === 'discharged');
+    const displayPatients = tab === 'active' ? activePatients : historyPatients;
+
     return (
-        <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem', borderBottom: '1px solid #f3f4f6', paddingBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Clock size={20} color="#8b5cf6" /> Patient Queue ({patients.length})
-            </h2>
+        <div style={{ backgroundColor: 'white', borderRadius: '1rem', display: 'flex', flexDirection: 'column', height: '100%', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
             
-            {patients.length === 0 ? (
-                <div style={{ color: '#9ca3af', textAlign: 'center', margin: 'auto' }}>All caught up! Queue is empty.</div>
-            ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto' }}>
-                    {patients.map(p => (
-                        <div 
-                            key={p.id} 
-                            onClick={() => onSelect(p)}
-                            style={{ 
-                                padding: '16px', 
-                                border: selectedPatient?.id === p.id ? '2px solid #8b5cf6' : '1px solid #e2e8f0', 
-                                borderRadius: '12px', 
-                                cursor: 'pointer',
-                                backgroundColor: selectedPatient?.id === p.id ? '#f5f3ff' : '#f8fafc',
-                                transition: 'all 0.2s ease'
-                            }}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                                <h3 style={{ margin: 0, fontWeight: 700, color: '#1E293B', fontSize: '15px' }}>{p.name}</h3>
-                                <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '12px', backgroundColor: '#DBEAFE', color: '#1D4ED8', textTransform: 'capitalize' }}>
-                                    {p.status.replace(/_/g, ' ')}
-                                </span>
-                            </div>
-                            <div style={{ fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Activity size={14} /> ID: {p.id.slice(-6).toUpperCase()}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+            <div style={{ display: 'flex', borderBottom: '1px solid #F1F5F9', background: '#F8FAFC' }}>
+                <button 
+                    onClick={() => setTab('active')}
+                    style={{ flex: 1, padding: '20px', border: 'none', background: tab === 'active' ? '#FFFFFF' : 'transparent', color: tab === 'active' ? '#8B5CF6' : '#64748B', fontWeight: 800, fontSize: '13px', textTransform: 'uppercase', cursor: 'pointer', borderBottom: tab === 'active' ? '2px solid #8B5CF6' : 'none' }}
+                >Active Patients ({activePatients.length})</button>
+                <button 
+                    onClick={() => setTab('history')}
+                    style={{ flex: 1, padding: '20px', border: 'none', background: tab === 'history' ? '#FFFFFF' : 'transparent', color: tab === 'history' ? '#8B5CF6' : '#64748B', fontWeight: 800, fontSize: '13px', textTransform: 'uppercase', cursor: 'pointer', borderBottom: tab === 'history' ? '2px solid #8B5CF6' : 'none' }}
+                >History ({historyPatients.length})</button>
+            </div>
+            
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '1.5rem', overflowY: 'auto' }}>
+                {displayPatients.length === 0 ? (
+                    <div style={{ color: '#94A3B8', textAlign: 'center', margin: 'auto' }}>
+                        <CheckCircle2 size={32} style={{ margin: '0 auto 12px auto', opacity: 0.3 }} />
+                        <p style={{ fontSize: '13px', fontWeight: 600 }}>Queue is empty</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {displayPatients.map(p => {
+                            const isSelected = selectedPatient?.id === p.id;
+                            let statusIcon = <Activity size={12} />;
+                            let statusColor = '#F1F5F9';
+                            let textColor = '#64748B';
+                            let label = p.status.replace(/_/g, ' ');
+
+                            switch (p.status) {
+                                case 'pending_vitals':
+                                    statusIcon = <Beaker size={12} />;
+                                    statusColor = '#F5F3FF';
+                                    textColor = '#7C3AED';
+                                    label = 'Vitals Req';
+                                    break;
+                                case 'vitals_scheduled':
+                                    statusIcon = <Clock size={12} />;
+                                    statusColor = '#EFF6FF';
+                                    textColor = '#2563EB';
+                                    label = 'Scheduled';
+                                    break;
+                                case 'vitals_collected':
+                                    statusIcon = <User size={12} />;
+                                    statusColor = '#ECFDF5';
+                                    textColor = '#059669';
+                                    label = 'Vitals Done';
+                                    break;
+                                case 'doctor_pending':
+                                    statusIcon = <Stethoscope size={12} />;
+                                    statusColor = '#FFF7ED';
+                                    textColor = '#C2410C';
+                                    label = 'Consulting';
+                                    break;
+                                case 'billing_pending':
+                                    statusIcon = <CreditCard size={12} />;
+                                    statusColor = '#FEF2F2';
+                                    textColor = '#DC2626';
+                                    label = 'Bill Mentoring';
+                                    break;
+                                case 'payment_completed':
+                                    statusIcon = <CheckCircle2 size={12} />;
+                                    statusColor = '#F0FDF4';
+                                    textColor = '#166534';
+                                    label = 'Check-out';
+                                    break;
+                                case 'discharged':
+                                    statusIcon = <Activity size={12} />;
+                                    statusColor = '#F1F5F9';
+                                    textColor = '#64748B';
+                                    label = 'Discharged';
+                                    break;
+                            }
+
+                            return (
+                                <div 
+                                    key={p.id} 
+                                    onClick={() => onSelect(p)}
+                                    style={{ 
+                                        padding: '14px', 
+                                        border: '1px solid', 
+                                        borderColor: isSelected ? '#8B5CF6' : '#F1F5F9',
+                                        borderRadius: '14px', 
+                                        cursor: 'pointer',
+                                        backgroundColor: isSelected ? '#F5F3FF' : '#FFFFFF',
+                                        transition: 'all 0.2s',
+                                        boxShadow: isSelected ? '0 10px 15px -3px rgba(139, 92, 246, 0.1)' : 'none',
+                                        opacity: p.status === 'discharged' ? 0.7 : 1
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                        <h3 style={{ margin: 0, fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>{p.name}</h3>
+                                        <span style={{ 
+                                            fontSize: '9px', fontWeight: 900, padding: '2px 8px', borderRadius: '6px', 
+                                            backgroundColor: statusColor, color: textColor, textTransform: 'uppercase',
+                                            display: 'flex', alignItems: 'center', gap: '4px'
+                                        }}>
+                                            {statusIcon} {label}
+                                        </span>
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 500 }}>
+                                        ID: {p.id.slice(-6).toUpperCase()} &middot; {p.issue?.description?.substring(0, 15)}...
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

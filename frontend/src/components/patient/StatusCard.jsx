@@ -3,22 +3,29 @@ import { Activity } from 'lucide-react';
 
 const StatusCard = ({ currentStatus, assignedNurse }) => {
   return (
-    <div style={{ background: 'linear-gradient(135deg, #1E3A8A, #2563EB)', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', color: 'white', display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#BFDBFE', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 16px 0' }}>Current Status</h3>
-      <div style={{ fontSize: '28px', fontWeight: 800, lineHeight: 1.2, margin: '0 0 24px 0', textTransform: 'capitalize' }}>
-        {currentStatus.replace(/_/g, ' ')}
+    <div style={{ 
+      background: 'rgba(30, 58, 138, 0.9)', 
+      backdropFilter: 'blur(10px)',
+      borderRadius: '24px', padding: '32px', 
+      boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)', 
+      color: 'white', display: 'flex', flexDirection: 'column', height: '100%',
+      border: '1px solid rgba(255,255,255,0.1)'
+    }}>
+      <h3 style={{ fontSize: '11px', fontWeight: 900, color: '#93C5FD', textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 16px 0' }}>Patient Journey Status</h3>
+      <div style={{ fontSize: '32px', fontWeight: 900, lineHeight: 1.1, margin: '0 0 32px 0', textTransform: 'capitalize', letterSpacing: '-0.5px' }}>
+        {currentStatus?.replace(/_/g, ' ') || 'Registered'}
       </div>
 
       {assignedNurse ? (
-        <div style={{ background: 'rgba(255,255,255,0.1)', padding: '16px', borderRadius: '12px', marginTop: 'auto' }}>
-          <div style={{ fontSize: '12px', color: '#DBEAFE', fontWeight: 600, marginBottom: '4px' }}>Assigned Nurse</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563EB', fontWeight: 800 }}>
-              {assignedNurse.name.charAt(0)}
+        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '20px', marginTop: 'auto', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ fontSize: '10px', color: '#93C5FD', fontWeight: 800, marginBottom: '12px', textTransform: 'uppercase' }}>Clinical Contact</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1E3A8A', fontWeight: 900, fontSize: '18px' }}>
+              {assignedNurse?.name?.[0] || 'N'}
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: '15px' }}>{assignedNurse.name}</div>
-              <div style={{ fontSize: '12px', opacity: 0.8 }}>Ward: {assignedNurse.ward} &middot; Contact: {assignedNurse.contact}</div>
+              <div style={{ fontWeight: 800, fontSize: '16px' }}>Nurse {assignedNurse.name}</div>
+              <div style={{ fontSize: '13px', opacity: 0.7, fontWeight: 500 }}>{assignedNurse.ward} &middot; Ext: {assignedNurse.contact}</div>
             </div>
           </div>
         </div>
