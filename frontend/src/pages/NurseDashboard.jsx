@@ -9,8 +9,8 @@ import AppointmentBooker from '../components/nurse/AppointmentBooker';
 import PharmacyView from '../components/nurse/PharmacyView';
 import UpcomingPatients from '../components/common/UpcomingPatients';
 
-const SOCKET_URL = 'http://localhost:5000';
-const API_URL = 'http://localhost:5000/api/nurse';
+const SOCKET_URL = 'http://https://dwo-final.onrender.com';
+const API_URL = 'http://https://dwo-final.onrender.com/api/nurse';
 
 const NurseDashboard = () => {
     const navigate = useNavigate();
@@ -258,7 +258,7 @@ const DischargeSection = ({ patient, onDischarge, cashMode }) => {
             {cashMode && (
                 <button 
                     onClick={() => {
-                        fetch('http://localhost:5000/api/patient/pay-bill', {
+                        fetch('http://https://dwo-final.onrender.com/api/patient/pay-bill', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'x-user': localStorage.getItem('user') },
                             body: JSON.stringify({ amount: patient.billing?.totalAmount, method: 'card' }) // force status paid

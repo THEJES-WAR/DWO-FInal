@@ -22,7 +22,7 @@ export const NotificationProvider = ({ children }) => {
     const endpoint = endpointMap[user.role];
     if (!endpoint) return;
     try {
-      const res = await fetch(`http://localhost:5000${endpoint}`, { headers: { 'x-user': JSON.stringify(user) } });
+      const res = await fetch(`http://https://dwo-final.onrender.com${endpoint}`, { headers: { 'x-user': JSON.stringify(user) } });
       if (res.ok) {
         const data = await res.json();
         setNotifications(data);
@@ -71,7 +71,7 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev => prev.map(n => (n._id === id || n.id === id) ? { ...n, read: true } : n));
     const user = JSON.parse(localStorage.getItem('user'));
     try {
-      await fetch(`http://localhost:5000/api/patient/notifications/${id}/mark-read`, {
+      await fetch(`http://https://dwo-final.onrender.com/api/patient/notifications/${id}/mark-read`, {
         method: 'PUT',
         headers: { 'x-user': JSON.stringify(user) }
       });
@@ -82,7 +82,7 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     const user = JSON.parse(localStorage.getItem('user'));
     try {
-      await fetch(`http://localhost:5000/api/patient/notifications/mark-read`, {
+      await fetch(`http://https://dwo-final.onrender.com/api/patient/notifications/mark-read`, {
         method: 'PUT',
         headers: { 'x-user': JSON.stringify(user) }
       });

@@ -4,7 +4,7 @@ import { Plus, Edit2, Trash2, X, Users, Stethoscope, Heart, Shield, LogOut, Sear
 import '../styles/AdminDashboard.css';
 import AdminWorkflowAnalytics from './AdminWorkflowAnalytics';
 
-const API_URL = 'http://localhost:5000/api/admin';
+const API_URL = 'https://dwo-final.onrender.com';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();

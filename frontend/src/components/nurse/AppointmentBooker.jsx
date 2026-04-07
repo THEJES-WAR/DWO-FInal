@@ -11,7 +11,7 @@ const AppointmentBooker = ({ patient, onBook }) => {
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
-        fetch('http://localhost:5000/api/patient/doctor-list', {
+        fetch('http://https://dwo-final.onrender.com/api/patient/doctor-list', {
             headers: { 'x-user': JSON.stringify(user) }
         })
         .then(res => res.json())
@@ -47,7 +47,7 @@ const AppointmentBooker = ({ patient, onBook }) => {
         setLoading(true);
         try {
             const user = JSON.parse(localStorage.getItem('user'));
-            const res = await fetch('http://localhost:5000/api/nurse/book-patient-slot', {
+            const res = await fetch('http://https://dwo-final.onrender.com/api/nurse/book-patient-slot', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(user) },
                 body: JSON.stringify({ patientId: patient.id })

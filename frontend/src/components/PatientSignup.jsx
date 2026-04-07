@@ -4,7 +4,7 @@ import {
     Calendar, Droplets, MapPin, ChevronRight, Info 
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://https://dwo-final.onrender.com/api';
 // Using the generated medical illustration
 const SIDEBAR_IMAGE = '/medical_signup_illustration_1775464346455.png'; 
 

@@ -14,7 +14,7 @@ const PrescriptionFulfiller = ({ patient, onComplete }) => {
     const handleFulfill = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/nurse/fulfill-prescription`, {
+            const res = await fetch(`http://https://dwo-final.onrender.com/api/nurse/fulfill-prescription`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'x-user': localStorage.getItem('user') },
                 body: JSON.stringify({ patientId: patient.id })

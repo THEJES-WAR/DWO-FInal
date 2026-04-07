@@ -397,6 +397,20 @@ router.post('/pay-bill', verifyUser, verifyRole(['Patient']), async (req, res) =
 });
 
 /**
+ * GET /api/patient/history
+ */
+router.get('/history', verifyUser, verifyRole(['Patient']), async (req, res) => {
+    try {
+        const patientsColl = getCollection('patients');
+        const patient = await patientsColl.findOne({ _id: new ObjectId(req.user._id) });
+        if (!patient) return res.status(404).json({ error: 'Patient not found' });
+        res.json(patient.visitHistory || []);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+/**
  * GET /api/patient/notifications
  */
 router.get('/notifications', verifyUser, verifyRole(['Patient', 'Nurse', 'Doctor']), async (req, res) => {

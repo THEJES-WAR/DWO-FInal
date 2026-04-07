@@ -15,7 +15,7 @@ const NurseCard = ({ nurse, visit, onConfirmTime }) => {
         const loadAvailability = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`http://localhost:5000/api/patient/nurse-availability/${nurse.id}`, {
+                const res = await fetch(`http://https://dwo-final.onrender.com/api/patient/nurse-availability/${nurse.id}`, {
                     headers: { 'x-user': JSON.stringify(user) }
                 });
                 if (res.ok) {

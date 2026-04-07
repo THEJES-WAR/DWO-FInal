@@ -13,7 +13,7 @@ const TestUploader = ({ patient, onUploadComplete }) => {
         setLoading(true);
         try {
             const user = JSON.parse(localStorage.getItem('user'));
-            const res = await fetch(`http://localhost:5000/api/nurse/upload-test-results`, {
+            const res = await fetch(`http://https://dwo-final.onrender.com/api/nurse/upload-test-results`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(user) },
                 body: JSON.stringify({ patientId: patient.id, testName, result })
