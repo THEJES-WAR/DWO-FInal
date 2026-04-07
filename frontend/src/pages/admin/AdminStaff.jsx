@@ -23,7 +23,7 @@ const AdminStaff = () => {
 
   const fetchStaff = async () => {
     try {
-      const res = await fetch('http://https://dwo-final.onrender.com/api/admin-new/staff', {
+      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/staff', {
         headers: { 'x-user': JSON.stringify(user) }
       });
       if (res.ok) {
@@ -43,7 +43,7 @@ const AdminStaff = () => {
     if (!reminderMsg.trim()) return;
     setSending(true);
     try {
-      const res = await fetch('http://https://dwo-final.onrender.com/api/admin-new/remind', {
+      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/remind', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(user) },
         body: JSON.stringify({

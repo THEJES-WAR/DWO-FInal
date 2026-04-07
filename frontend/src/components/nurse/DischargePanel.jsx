@@ -10,7 +10,7 @@ const DischargePanel = ({ patient }) => {
     const handleDischarge = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://https://dwo-final.onrender.com/api/nurse/discharge-patient`, {
+            const res = await fetch(`https://dwo-final.onrender.com/api/nurse/discharge-patient`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'x-user': localStorage.getItem('user') },
                 body: JSON.stringify({ patientId: patient.id })

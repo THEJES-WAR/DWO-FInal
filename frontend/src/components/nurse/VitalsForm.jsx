@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Activity, CheckCircle2 } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
 
-const API_URL = 'http://https://dwo-final.onrender.com/api/nurse';
+const API_URL = 'https://dwo-final.onrender.com/api/nurse';
 
 const VitalsForm = ({ patient, onComplete }) => {
     const { addToast } = useNotifications();

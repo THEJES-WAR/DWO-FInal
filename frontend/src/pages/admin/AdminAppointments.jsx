@@ -31,7 +31,7 @@ const AdminAppointments = () => {
   const fetchAppointments = async () => {
     try {
       const freshUser = JSON.parse(localStorage.getItem('user'));
-      const res = await fetch('http://https://dwo-final.onrender.com/api/admin-new/all-appointments', {
+      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/all-appointments', {
         headers: { 'x-user': JSON.stringify(freshUser) }
       });
       if (res.ok) { setData(await res.json()); setLastSync(new Date()); }
@@ -50,7 +50,7 @@ const AdminAppointments = () => {
     setSending(true);
     try {
       const freshUser = JSON.parse(localStorage.getItem('user'));
-      const res = await fetch('http://https://dwo-final.onrender.com/api/admin-new/remind', {
+      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/remind', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(freshUser) },
         body: JSON.stringify({

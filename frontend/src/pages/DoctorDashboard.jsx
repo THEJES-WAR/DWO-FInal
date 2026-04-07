@@ -8,8 +8,8 @@ import {
 import { useNotifications } from '../context/NotificationContext';
 import UpcomingPatients from '../components/common/UpcomingPatients';
 
-const SOCKET_URL = 'http://https://dwo-final.onrender.com';
-const API_URL = 'http://https://dwo-final.onrender.com/api/doctor';
+const SOCKET_URL = 'https://dwo-final.onrender.com';
+const API_URL = 'https://dwo-final.onrender.com/api/doctor';
 
 const DoctorDashboard = () => {
     const navigate = useNavigate();

@@ -16,8 +16,8 @@ import VisitHistory from '../components/patient/VisitHistory';
 import AppointmentCard from '../components/patient/AppointmentCard';
 import BillingSection from '../components/patient/BillingSection';
 
-const SOCKET_URL = 'http://https://dwo-final.onrender.com';
-const API_URL = 'http://https://dwo-final.onrender.com/api/patient';
+const SOCKET_URL = 'https://dwo-final.onrender.com';
+const API_URL = 'https://dwo-final.onrender.com/api/patient';
 
 const PatientDashboard = () => {
     const navigate = useNavigate();
@@ -139,7 +139,7 @@ const PatientDashboard = () => {
 
     const handlePayBill = async (amount, method) => {
         try {
-            const res = await fetch('http://https://dwo-final.onrender.com/api/patient/pay-bill', {
+            const res = await fetch('https://dwo-final.onrender.com/api/patient/pay-bill', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(user) },
                 body: JSON.stringify({ amount, method })

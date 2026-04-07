@@ -8,7 +8,7 @@ const AdminWorkflowAnalytics = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     const token = localStorage.getItem('token');
     
-    const API_URL = 'http://https://dwo-final.onrender.com/api';
+    const API_URL = 'https://dwo-final.onrender.com/api';
 
     useEffect(() => {
         fetchAnalytics();

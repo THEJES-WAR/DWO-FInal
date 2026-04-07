@@ -9,7 +9,7 @@ const UpcomingPatients = ({ role }) => {
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user) return;
         try {
-            const res = await fetch('http://https://dwo-final.onrender.com/api/patient/upcoming', {
+            const res = await fetch('https://dwo-final.onrender.com/api/patient/upcoming', {
                 headers: { 'x-user': JSON.stringify(user) }
             });
             if (res.ok) {

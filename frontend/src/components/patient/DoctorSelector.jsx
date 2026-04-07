@@ -15,7 +15,7 @@ const DoctorSelector = ({ onSelect }) => {
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user) return;
 
-        const url = new URL('http://https://dwo-final.onrender.com/api/patient/doctor-list');
+        const url = new URL('https://dwo-final.onrender.com/api/patient/doctor-list');
 
         fetch(url, { headers: { 'x-user': JSON.stringify(user) } })
             .then(res => res.json())
