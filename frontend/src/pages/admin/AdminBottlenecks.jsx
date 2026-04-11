@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { AlertCircle, Zap, ShieldAlert, Cpu, RefreshCw } from 'lucide-react';
+import { apiUrl } from '../../utils/api';
 
 const card = {
   background: '#FFFFFF', borderRadius: '12px',
@@ -17,7 +18,7 @@ const AdminBottlenecks = () => {
   const fetchData = async () => {
     try {
       const freshUser = JSON.parse(localStorage.getItem('user'));
-      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/detailed-workflow', {
+      const res = await fetch(apiUrl('/admin-new/detailed-workflow'), {
         headers: { 'x-user': JSON.stringify(freshUser) }
       });
       if (res.ok) setData(await res.json());

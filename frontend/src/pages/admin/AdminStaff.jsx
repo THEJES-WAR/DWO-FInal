@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Phone, Mail, Award, Activity, Search, RefreshCw, Star, Send, X, Bell, Stethoscope, UserCheck } from 'lucide-react';
+import { apiUrl } from '../../utils/api';
 
 const ROLE_COLORS = {
   Doctor: { bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE', accent: '#2563EB' },
@@ -23,7 +24,7 @@ const AdminStaff = () => {
 
   const fetchStaff = async () => {
     try {
-      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/staff', {
+      const res = await fetch(apiUrl('/admin-new/staff'), {
         headers: { 'x-user': JSON.stringify(user) }
       });
       if (res.ok) {
@@ -43,7 +44,7 @@ const AdminStaff = () => {
     if (!reminderMsg.trim()) return;
     setSending(true);
     try {
-      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/remind', {
+      const res = await fetch(apiUrl('/admin-new/remind'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(user) },
         body: JSON.stringify({

@@ -3,18 +3,27 @@ import { Activity, Clock, Beaker, CreditCard, CheckCircle2, User, Stethoscope } 
 
 const PatientQueue = ({ patients, selectedPatient, onSelect }) => {
     const [tab, setTab] = useState('active');
+    const [searchQuery, setSearchQuery] = useState('');
+    const getPatientId = (patient) => patient?.id || patient?._id || '';
 
-    // First Come First Serve Sorting (fallback to array order if no createdAt)
+    // Chronological Sorting: Sort by scheduled time
     const sortedPatients = [...patients].sort((a, b) => {
-        if (a.createdAt && b.createdAt) {
-            return new Date(a.createdAt) - new Date(b.createdAt);
-        }
-        return 0; // Maintain original
+        const timeA = a.nurseVisit?.time || a.appointmentSlot?.time || '99:99';
+        const timeB = b.nurseVisit?.time || b.appointmentSlot?.time || '99:99';
+        
+        if (timeA !== timeB) return timeA.localeCompare(timeB);
+        
+        // Secondary sort by createdAt
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     });
 
-    const activePatients = sortedPatients.filter(p => p.status !== 'discharged');
-    const historyPatients = sortedPatients.filter(p => p.status === 'discharged');
-    const displayPatients = tab === 'active' ? activePatients : historyPatients;
+    const activePatients = sortedPatients.filter(p => ['pending_vitals', 'vitals_scheduled', 'payment_pending_cash', 'payment_completed'].includes(p.status));
+    const historyPatients = sortedPatients.filter(p => !['pending_vitals', 'vitals_scheduled', 'payment_pending_cash', 'payment_completed'].includes(p.status));
+
+    const displayPatients = (tab === 'active' ? activePatients : historyPatients).filter(p => 
+        (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getPatientId(p).toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <div style={{ backgroundColor: 'white', borderRadius: '1rem', display: 'flex', flexDirection: 'column', height: '100%', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
@@ -30,6 +39,20 @@ const PatientQueue = ({ patients, selectedPatient, onSelect }) => {
                 >History ({historyPatients.length})</button>
             </div>
             
+            <div style={{ padding: '16px', borderBottom: '1px solid #F1F5F9' }}>
+                <input 
+                    type="text" 
+                    placeholder={`Search ${tab} patients...`}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{ 
+                        width: '100%', padding: '10px 14px', borderRadius: '10px', 
+                        border: '1px solid #E2E8F0', fontSize: '13px', outline: 'none',
+                        background: '#FAFBFC'
+                    }}
+                />
+            </div>
+            
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '1.5rem', overflowY: 'auto' }}>
                 {displayPatients.length === 0 ? (
                     <div style={{ color: '#94A3B8', textAlign: 'center', margin: 'auto' }}>
@@ -39,11 +62,12 @@ const PatientQueue = ({ patients, selectedPatient, onSelect }) => {
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {displayPatients.map(p => {
-                            const isSelected = selectedPatient?.id === p.id;
+                            const patientId = getPatientId(p);
+                            const isSelected = getPatientId(selectedPatient) === patientId;
                             let statusIcon = <Activity size={12} />;
                             let statusColor = '#F1F5F9';
                             let textColor = '#64748B';
-                            let label = p.status.replace(/_/g, ' ');
+                            let label = (p.status || 'unknown').replace(/_/g, ' ');
 
                             switch (p.status) {
                                 case 'pending_vitals':
@@ -76,6 +100,12 @@ const PatientQueue = ({ patients, selectedPatient, onSelect }) => {
                                     textColor = '#DC2626';
                                     label = 'Bill Mentoring';
                                     break;
+                                case 'payment_pending_cash':
+                                    statusIcon = <CreditCard size={12} />;
+                                    statusColor = '#FFFBEB';
+                                    textColor = '#D97706';
+                                    label = 'Cash Pending';
+                                    break;
                                 case 'payment_completed':
                                     statusIcon = <CheckCircle2 size={12} />;
                                     statusColor = '#F0FDF4';
@@ -92,7 +122,7 @@ const PatientQueue = ({ patients, selectedPatient, onSelect }) => {
 
                             return (
                                 <div 
-                                    key={p.id} 
+                                    key={patientId || p.name} 
                                     onClick={() => onSelect(p)}
                                     style={{ 
                                         padding: '14px', 
@@ -117,7 +147,7 @@ const PatientQueue = ({ patients, selectedPatient, onSelect }) => {
                                         </span>
                                     </div>
                                     <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 500 }}>
-                                        ID: {p.id.slice(-6).toUpperCase()} &middot; {p.issue?.description?.substring(0, 15)}...
+                                        ID: {(patientId || 'N/A').slice(-6).toUpperCase()} &middot; {(p.issue?.description || 'No issue logged').substring(0, 15)}...
                                     </div>
                                 </div>
                             );

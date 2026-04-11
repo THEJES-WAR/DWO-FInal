@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, User, Calendar, Clock, ChevronRight, Activity } from 'lucide-react';
+import { apiUrl } from '../../utils/api';
 
-const API_URL = 'https://dwo-final.onrender.com/api/patient';
+const API_URL = apiUrl('/patient');
 
 const RebookWidget = ({ onRebookComplete }) => {
     const [doctors, setDoctors] = useState([]);
@@ -20,7 +21,7 @@ const RebookWidget = ({ onRebookComplete }) => {
     const fetchDoctors = async () => {
         try {
             // Reusing the general doctors endpoint if available, or a specific patient one
-            const res = await fetch('https://dwo-final.onrender.com/api/nurse/doctors', {
+            const res = await fetch(apiUrl('/nurse/doctors'), {
                 headers: { 'x-user': JSON.stringify(user) }
             });
             if (res.ok) setDoctors(await res.json());

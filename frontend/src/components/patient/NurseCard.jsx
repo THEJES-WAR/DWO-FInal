@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { User, Clock, Check } from 'lucide-react';
+import { apiUrl } from '../../utils/api';
 
 const NurseCard = ({ nurse, visit, onConfirmTime }) => {
     const [availability, setAvailability] = useState([]);
@@ -15,7 +16,7 @@ const NurseCard = ({ nurse, visit, onConfirmTime }) => {
         const loadAvailability = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`https://dwo-final.onrender.com/api/patient/nurse-availability/${nurse.id}`, {
+                const res = await fetch(apiUrl(`/patient/nurse-availability/${nurse.id}`), {
                     headers: { 'x-user': JSON.stringify(user) }
                 });
                 if (res.ok) {

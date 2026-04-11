@@ -240,7 +240,7 @@ router.post('/book-nurse', verifyUser, verifyRole(['Patient']), async (req, res)
 /**
  * GET /api/patient/doctor-list
  */
-router.get('/doctor-list', verifyUser, verifyRole(['Patient']), async (req, res) => {
+router.get('/doctor-list', verifyUser, verifyRole(['Patient', 'Nurse']), async (req, res) => {
     try {
         const { specialization } = req.query;
         const doctorsColl = getCollection('doctors');
@@ -305,11 +305,14 @@ router.get('/doctor-list', verifyUser, verifyRole(['Patient']), async (req, res)
 /**
  * POST /api/patient/choose-doctor
  */
-router.post('/choose-doctor', verifyUser, verifyRole(['Patient']), async (req, res) => {
+router.post('/choose-doctor', verifyUser, verifyRole(['Patient', 'Nurse']), async (req, res) => {
     try {
-        const { doctorId, date, time } = req.body;
+        const { patientId, doctorId, date, time } = req.body;
         const patientsColl = getCollection('patients');
         const doctorsColl = getCollection('doctors');
+
+        const targetPatientId = (req.user.role === 'Nurse') ? patientId : req.user._id;
+        if (!targetPatientId) return res.status(400).json({ error: 'Patient ID is required' });
 
         const doctor = await doctorsColl.findOne({ _id: new ObjectId(doctorId) });
         if (!doctor) return res.status(404).json({ error: 'Doctor not found' });

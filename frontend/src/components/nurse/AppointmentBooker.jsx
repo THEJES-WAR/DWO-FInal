@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Clock, User, CheckCircle, ChevronDown } from 'lucide-react';
+import { apiUrl } from '../../utils/api';
 
 const AppointmentBooker = ({ patient, onBook }) => {
     const [doctors, setDoctors] = useState([]);
@@ -11,12 +12,12 @@ const AppointmentBooker = ({ patient, onBook }) => {
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
-        fetch('https://dwo-final.onrender.com/api/patient/doctor-list', {
+        fetch(apiUrl('/patient/doctor-list'), {
             headers: { 'x-user': JSON.stringify(user) }
         })
         .then(res => res.json())
         .then(data => {
-            setDoctors(data || []);
+            setDoctors(Array.isArray(data) ? data : []);
             setFetching(false);
         })
         .catch(err => {
@@ -30,10 +31,23 @@ const AppointmentBooker = ({ patient, onBook }) => {
         [doctors, selectedDocId]
     );
 
+    const availableDates = useMemo(() => {
+        if (!selectedDoc?.availability) return [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const limit = new Date(today);
+        limit.setDate(today.getDate() + 3);
+
+        return selectedDoc.availability.filter(a => {
+            const d = new Date(a.date);
+            return d >= today && d <= limit;
+        });
+    }, [selectedDoc]);
+
     const availableSlots = useMemo(() => {
         if (!selectedDoc || !date) return [];
-        return selectedDoc.availability?.find(a => a.date === date)?.openSlots || [];
-    }, [selectedDoc, date]);
+        return availableDates.find(a => a.date === date)?.openSlots || [];
+    }, [selectedDoc, date, availableDates]);
 
     const handleBook = async () => {
         if (!selectedDocId || !date || !time) return;
@@ -47,7 +61,7 @@ const AppointmentBooker = ({ patient, onBook }) => {
         setLoading(true);
         try {
             const user = JSON.parse(localStorage.getItem('user'));
-            const res = await fetch('https://dwo-final.onrender.com/api/nurse/book-patient-slot', {
+            const res = await fetch(apiUrl('/nurse/book-patient-slot'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(user) },
                 body: JSON.stringify({ patientId: patient.id })
@@ -112,8 +126,13 @@ const AppointmentBooker = ({ patient, onBook }) => {
                         style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '14px', fontWeight: 600 }}
                     >
                         <option value="">-- Pick a Date --</option>
-                        {selectedDoc?.availability?.map(a => (
-                            <option key={a.date} value={a.date}>{a.date} ({a.openSlots.length} free)</option>
+                        {availableDates.map(a => (
+                            <option key={a.date} value={a.date}>{a.date === new Date().toISOString().split('T')[0] ? 'Today' : a.date} ({a.openSlots.filter(s => {
+                                if (a.date !== new Date().toISOString().split('T')[0]) return true;
+                                const now = new Date();
+                                const [h, m] = s.split(':').map(Number);
+                                return (h * 60 + m) > (now.getHours() * 60 + now.getMinutes());
+                            }).length} free)</option>
                         ))}
                     </select>
                 </div>
@@ -123,7 +142,17 @@ const AppointmentBooker = ({ patient, onBook }) => {
                 <div style={{ marginBottom: '24px' }}>
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: 900, color: '#94A3B8', textTransform: 'uppercase', marginBottom: '12px' }}>3. Pick 30-min Slot</label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', maxHeight: '180px', overflowY: 'auto', padding: '12px', background: 'white', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-                        {availableSlots.length > 0 ? availableSlots.map(s => (
+                        {availableSlots.filter(s => {
+                            if (date !== new Date().toISOString().split('T')[0]) return true;
+                            const now = new Date();
+                            const [h, m] = s.split(':').map(Number);
+                            return (h * 60 + m) > (now.getHours() * 60 + now.getMinutes());
+                        }).length > 0 ? availableSlots.filter(s => {
+                            if (date !== new Date().toISOString().split('T')[0]) return true;
+                            const now = new Date();
+                            const [h, m] = s.split(':').map(Number);
+                            return (h * 60 + m) > (now.getHours() * 60 + now.getMinutes());
+                        }).map(s => (
                             <button
                                 key={s}
                                 onClick={() => setTime(s)}

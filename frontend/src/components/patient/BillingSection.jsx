@@ -52,15 +52,11 @@ const BillingSection = ({ billing, onPay }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px' }}>
                         <span style={{ color: '#64748B', fontWeight: 500 }}>Consultation Fee</span>
-                        <span style={{ color: '#1E293B', fontWeight: 600 }}>₹{billing.consultationFee}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px' }}>
-                        <span style={{ color: '#64748B', fontWeight: 500 }}>Clinical Tests</span>
-                        <span style={{ color: '#1E293B', fontWeight: 600 }}>₹{billing.testCharges}</span>
+                        <span style={{ color: '#1E293B', fontWeight: 600 }}>₹{billing.consultationFee || 300}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', paddingBottom: '16px', borderBottom: '1px dashed #CBD5E1' }}>
-                        <span style={{ color: '#64748B', fontWeight: 500 }}>Medications</span>
-                        <span style={{ color: '#1E293B', fontWeight: 600 }}>₹{billing.medicationCharges}</span>
+                        <span style={{ color: '#64748B', fontWeight: 500 }}>Medicinal Charges</span>
+                        <span style={{ color: '#1E293B', fontWeight: 600 }}>₹{billing.medicinalCharges || billing.prescriptionFee || 0}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '20px', paddingTop: '4px' }}>
                         <span style={{ color: '#1E293B', fontWeight: 800 }}>Total Amount</span>
@@ -86,8 +82,8 @@ const BillingSection = ({ billing, onPay }) => {
                                         <h1 style="color: #2563EB;">MedPlus+ Receipt</h1>
                                         <p><strong>Date:</strong> ${new Date(billing.paidAt || billing.generatedAt).toLocaleString()}</p>
                                         <hr style="margin: 20px 0" />
-                                        <p><strong>Consultation Fee:</strong> Rs. ${billing.consultationFee}</p>
-                                        <p><strong>Medications:</strong> Rs. ${billing.medicationCharges}</p>
+                                        <p><strong>Consultation Fee:</strong> Rs. ${billing.consultationFee || 300}</p>
+                                        <p><strong>Medicinal Charges:</strong> Rs. ${billing.medicinalCharges || billing.prescriptionFee || 0}</p>
                                         <hr style="margin: 20px 0" />
                                         <h2>Total Paid: Rs. ${billing.totalAmount}</h2>
                                         <p style="color: #15803D; font-weight: bold;">Status: PAID COMPLETED</p>

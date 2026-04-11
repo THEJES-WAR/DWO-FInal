@@ -1,26 +1,30 @@
 import React, { useState } from 'react';
 import { Activity, CheckCircle2 } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
+import { apiUrl } from '../../utils/api';
 
-const API_URL = 'https://dwo-final.onrender.com/api/nurse';
+const API_URL = apiUrl('/nurse');
 
-const VitalsForm = ({ patient, onComplete }) => {
+const VitalsForm = ({ patient, onComplete, initialVitals }) => {
     const { addToast } = useNotifications();
     const [vitals, setVitals] = useState({
-        // ... rest stays same
-        height: '',
-        weight: '',
-        bp: '',
-        sugar: '',
-        heartRate: '',
-        temperature: '',
-        oxygenSaturation: '',
-        notes: ''
+        height: initialVitals?.height || '',
+        weight: initialVitals?.weight || '',
+        bp: initialVitals?.bp || '',
+        sugar: initialVitals?.sugar || '',
+        heartRate: initialVitals?.heartRate || '',
+        temperature: initialVitals?.temperature || '',
+        oxygenSaturation: initialVitals?.oxygenSaturation || '',
+        notes: initialVitals?.notes || ''
     });
     const [loading, setLoading] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
 
     const handleSubmit = async () => {
-        if (!vitals.height || !vitals.weight || !vitals.bp || !vitals.sugar || !vitals.heartRate || !vitals.temperature) return;
+        if (!vitals.height || !vitals.weight || !vitals.bp || !vitals.sugar || !vitals.heartRate || !vitals.temperature) {
+            addToast({ type: 'urgent', message: 'Please fill all required vitals.' });
+            return;
+        }
 
         setLoading(true);
         try {
@@ -30,13 +34,61 @@ const VitalsForm = ({ patient, onComplete }) => {
                 headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(user) },
                 body: JSON.stringify({ patientId: patient.id, ...vitals })
             });
-            if (res.ok) onComplete();
+            if (res.ok) {
+                setSubmitted(true);
+                addToast({ type: 'success', message: 'Vitals recorded successfully!' });
+                // Automatic refresh removed to prevent "blank page" feel. 
+                // Nurse will now click an explicit 'Finish' button.
+            } else {
+                addToast({ type: 'urgent', message: 'Failed to save vitals.' });
+            }
         } catch (err) {
             console.error(err);
+            addToast({ type: 'urgent', message: 'Network error.' });
         } finally {
             setLoading(false);
         }
     };
+
+    if (submitted) {
+        return (
+            <div style={{ background: '#F0FDF4', borderRadius: '24px', padding: '32px', border: '1px solid #BBF7D0', textAlign: 'center', marginTop: '24px' }}>
+                <CheckCircle2 size={48} color="#10B981" style={{ margin: '0 auto 16px auto' }} />
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 800, color: '#065F46' }}>Completed ✅</h3>
+                <p style={{ margin: '0 0 24px 0', color: '#15803D', fontWeight: 500 }}>The patient's vitals have been recorded and they have been notified.</p>
+                
+                <div style={{ textAlign: 'left', padding: '16px', background: 'white', borderRadius: '12px', border: '1px solid #BBF7D0' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 900, color: '#94A3B8', textTransform: 'uppercase', marginBottom: '8px' }}>Captured Vitals Summary</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', fontSize: '14px', color: '#1E293B' }}>
+                        <div><strong>BP:</strong> {vitals.bp}</div>
+                        <div><strong>Sugar:</strong> {vitals.sugar}</div>
+                        <div><strong>Temp:</strong> {vitals.temperature}°F</div>
+                        <div><strong>HR:</strong> {vitals.heartRate} bpm</div>
+                    </div>
+                </div>
+
+                <div style={{ marginTop: '32px', borderTop: '1px dashed #BBF7D0', paddingTop: '16px', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <div style={{ fontSize: '12px', color: '#64748B', fontStyle: 'italic' }}>
+                            Nurse Signature: <span style={{ fontFamily: "'Dancing Script', cursive", fontSize: '18px', marginLeft: '10px' }}>{JSON.parse(localStorage.getItem('user'))?.name || 'Authorized Nurse'}</span>
+                        </div>
+                        <div style={{ width: '200px', height: '1px', background: '#94A3B8', marginTop: '4px' }}></div>
+                    </div>
+                    
+                    <button 
+                        onClick={() => onComplete && onComplete()}
+                        style={{ 
+                            background: '#10B981', color: 'white', border: 'none', 
+                            padding: '12px 24px', borderRadius: '12px', fontWeight: 800, 
+                            cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)'
+                        }}
+                    >
+                        Complete & Continue
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{ background: '#FFFFFF', borderRadius: '24px', padding: '32px', border: '1px solid #E2E8F0', marginTop: '24px' }}>
@@ -154,3 +206,4 @@ const VitalsForm = ({ patient, onComplete }) => {
 };
 
 export default VitalsForm;
+

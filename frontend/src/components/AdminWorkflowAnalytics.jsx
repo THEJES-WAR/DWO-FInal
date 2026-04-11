@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { AlertOctagon, TrendingUp, Users, Activity } from 'lucide-react';
+import { apiUrl } from '../utils/api';
 
 const AdminWorkflowAnalytics = () => {
     const [analytics, setAnalytics] = useState(null);
@@ -8,7 +9,7 @@ const AdminWorkflowAnalytics = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     const token = localStorage.getItem('token');
     
-    const API_URL = 'https://dwo-final.onrender.com/api';
+    const API_URL = apiUrl();
 
     useEffect(() => {
         fetchAnalytics();

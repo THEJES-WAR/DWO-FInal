@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Send, X, RefreshCw, Activity, ChevronRight, Loader, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
+import { apiUrl } from '../../utils/api';
 
 /* ─── Pipeline stages (excluding 'registered' — those are not in workflow yet) ─── */
 const PIPELINE = [
@@ -61,7 +62,7 @@ const AdminWorkflow = () => {
   const fetchAll = async () => {
     try {
       const freshUser = JSON.parse(localStorage.getItem('user'));
-      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/live-patients', {
+      const res = await fetch(apiUrl('/admin-new/live-patients'), {
         headers: { 'x-user': JSON.stringify(freshUser) }
       });
       if (res.ok) { setPatients(await res.json()); setLastSync(new Date()); }
@@ -80,7 +81,7 @@ const AdminWorkflow = () => {
     setSending(true);
     try {
       const freshUser = JSON.parse(localStorage.getItem('user'));
-      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/remind', {
+      const res = await fetch(apiUrl('/admin-new/remind'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(freshUser) },
         body: JSON.stringify({

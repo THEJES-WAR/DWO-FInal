@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pill, CheckCircle2, Clock } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
+import { apiUrl } from '../../utils/api';
 
 const PrescriptionFulfiller = ({ patient, onComplete }) => {
     const [loading, setLoading] = useState(false);
@@ -14,7 +15,7 @@ const PrescriptionFulfiller = ({ patient, onComplete }) => {
     const handleFulfill = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`https://dwo-final.onrender.com/api/nurse/fulfill-prescription`, {
+            const res = await fetch(apiUrl('/nurse/fulfill-prescription'), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'x-user': localStorage.getItem('user') },
                 body: JSON.stringify({ patientId: patient.id })

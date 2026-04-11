@@ -7,9 +7,9 @@ import {
 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import UpcomingPatients from '../components/common/UpcomingPatients';
+import { SOCKET_URL, apiUrl } from '../utils/api';
 
-const SOCKET_URL = 'https://dwo-final.onrender.com';
-const API_URL = 'https://dwo-final.onrender.com/api/doctor';
+const API_URL = apiUrl('/doctor');
 
 const DoctorDashboard = () => {
     const navigate = useNavigate();

@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, Loader2, Mail, Lock, User, ShieldCheck, UserCheck, Settings, Info, Heart, Activity, Shield, Star } from 'lucide-react';
 import PatientSignup from '../components/PatientSignup';
+import { apiUrl } from '../utils/api';
 
-const API_URL = 'https://dwo-final.onrender.com/api';
+const API_URL = apiUrl();
 
 /* ─── Role Config ─── */
 const ROLES = [

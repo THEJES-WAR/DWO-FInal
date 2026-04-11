@@ -4,6 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import { Users, Stethoscope, Clock, BedDouble, AlertOctagon, Activity, RefreshCw } from 'lucide-react';
+import { apiUrl } from '../../utils/api';
 
 /* ─── tiny style helpers ─── */
 const card = {
@@ -35,7 +36,7 @@ const AdminOverview = () => {
   const fetchData = async () => {
     try {
       const freshUser = JSON.parse(localStorage.getItem('user'));
-      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/detailed-workflow', {
+      const res = await fetch(apiUrl('/admin-new/detailed-workflow'), {
         headers: { 'x-user': JSON.stringify(freshUser) }
       });
       if (res.ok) { setData(await res.json()); setLastSync(new Date()); }

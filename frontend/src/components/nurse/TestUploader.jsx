@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, FileText } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
+import { apiUrl } from '../../utils/api';
 
 const TestUploader = ({ patient, onUploadComplete }) => {
     const [testName, setTestName] = useState('');
@@ -13,7 +14,7 @@ const TestUploader = ({ patient, onUploadComplete }) => {
         setLoading(true);
         try {
             const user = JSON.parse(localStorage.getItem('user'));
-            const res = await fetch(`https://dwo-final.onrender.com/api/nurse/upload-test-results`, {
+            const res = await fetch(apiUrl('/nurse/upload-test-results'), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(user) },
                 body: JSON.stringify({ patientId: patient.id, testName, result })

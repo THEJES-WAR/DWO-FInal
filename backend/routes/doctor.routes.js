@@ -68,19 +68,18 @@ router.put('/complete-consultation', verifyUser, verifyRole(['Doctor']), async (
         let prescriptionFee = 0;
         
         if (!noMedicine && prescriptions?.length > 0) {
-            // Random amount between 300 and 1000 if medicines prescribed
-            prescriptionFee = Math.floor(Math.random() * 701) + 300; 
+            // Random amount between 100 and 1000 if medicines prescribed
+            prescriptionFee = Math.floor(Math.random() * 901) + 100; 
         }
 
-        const testFee = 0; // Removed extra test fee as per new logic
-        const totalAmount = consultationFee + prescriptionFee + testFee;
+        const totalAmount = consultationFee + prescriptionFee;
 
         const billing = {
             billNo,
             consultationFee,
-            testFee,
             prescriptionFee,
             totalAmount,
+            medicinalCharges: prescriptionFee, // Explicit for UI
             status: 'pending',
             generatedAt: new Date()
         };

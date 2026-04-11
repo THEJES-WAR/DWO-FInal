@@ -3,8 +3,9 @@ import {
     UserPlus, ArrowRight, Loader2, User, Mail, Lock, Phone, 
     Calendar, Droplets, MapPin, ChevronRight, Info 
 } from 'lucide-react';
+import { apiUrl } from '../utils/api';
 
-const API_URL = 'https://dwo-final.onrender.com/api';
+const API_URL = apiUrl();
 // Using the generated medical illustration
 const SIDEBAR_IMAGE = '/medical_signup_illustration_1775464346455.png'; 
 

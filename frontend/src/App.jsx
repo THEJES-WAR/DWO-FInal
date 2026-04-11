@@ -15,6 +15,7 @@ import AdminWorkflow from './pages/admin/AdminWorkflow';
 import AdminBottlenecks from './pages/admin/AdminBottlenecks';
 import AdminStaff from './pages/admin/AdminStaff';
 import AdminAppointments from './pages/admin/AdminAppointments';
+import AdminPatients from './pages/admin/AdminPatients';
 
 const Stub = ({ title }) => (
   <div className="flex items-center justify-center h-full">
@@ -52,6 +53,7 @@ const RoleBasedDashboard = () => {
           <Route path="overview" element={<AdminOverview />} />
           <Route path="bottlenecks" element={<AdminBottlenecks />} />
           <Route path="workflow" element={<AdminWorkflow />} />
+          <Route path="patients" element={<AdminPatients />} />
           <Route path="staff" element={<AdminStaff />} />
           <Route path="appointments" element={<AdminAppointments />} />
           <Route path="alerts" element={<Stub title="Alerts" />} />

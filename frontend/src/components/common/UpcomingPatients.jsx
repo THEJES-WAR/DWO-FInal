@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Clock, User, Calendar, Activity, Stethoscope } from 'lucide-react';
+import { apiUrl } from '../../utils/api';
 
 const UpcomingPatients = ({ role }) => {
     const [patients, setPatients] = useState([]);
@@ -9,7 +10,7 @@ const UpcomingPatients = ({ role }) => {
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user) return;
         try {
-            const res = await fetch('https://dwo-final.onrender.com/api/patient/upcoming', {
+            const res = await fetch(apiUrl('/patient/upcoming'), {
                 headers: { 'x-user': JSON.stringify(user) }
             });
             if (res.ok) {

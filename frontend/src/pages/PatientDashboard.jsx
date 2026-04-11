@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Activity, Bell, LogOut, CheckCircle2, Clock, User, CreditCard, CheckCircle, Stethoscope } from 'lucide-react';
+import { Activity, Bell, LogOut, CheckCircle2, Clock, User, CreditCard, CheckCircle, Stethoscope, Pill } from 'lucide-react';
 
 import { useNotifications } from '../context/NotificationContext';
 import StatusCard from '../components/patient/StatusCard';
@@ -15,20 +15,25 @@ import PaymentBox from '../components/patient/PaymentBox';
 import VisitHistory from '../components/patient/VisitHistory';
 import AppointmentCard from '../components/patient/AppointmentCard';
 import BillingSection from '../components/patient/BillingSection';
+import { SOCKET_URL, apiUrl } from '../utils/api';
 
-const SOCKET_URL = 'https://dwo-final.onrender.com';
-const API_URL = 'https://dwo-final.onrender.com/api/patient';
+const API_URL = apiUrl('/patient');
 
 const PatientDashboard = () => {
     const navigate = useNavigate();
     const [data, setData] = useState(null);
-    const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState('current'); // 'current' or 'history'
+    const [hasDismissedDischarge, setHasDismissedDischarge] = useState(false);
     
     const token = localStorage.getItem('token');
     const user = React.useMemo(() => JSON.parse(localStorage.getItem('user')), []);
     const { addToast, toggleDrawer } = useNotifications();
+    const sortedVisitHistory = React.useMemo(() => {
+        const visitHistory = data?.visitHistory;
+        if (!visitHistory) return [];
+        return [...visitHistory].sort((a, b) => new Date(b.date || b.dischargedAt || b.createdAt) - new Date(a.date || a.dischargedAt || a.createdAt));
+    }, [data?.visitHistory]);
 
     useEffect(() => {
         if (!token || user?.role !== 'Patient') {
@@ -37,7 +42,6 @@ const PatientDashboard = () => {
         }
 
         fetchDashboardData();
-        fetchHistory();
 
         const socket = io(SOCKET_URL);
         socket.on('connect', () => {
@@ -53,7 +57,6 @@ const PatientDashboard = () => {
         socket.on('consultation:completed', () => {
             addToast({ type: 'info', message: 'Consultation finished. Bill generated.' });
             fetchDashboardData();
-            fetchHistory();
         });
         socket.on('patient:discharged', () => {
             addToast({ type: 'success', message: 'You have been discharged.' });
@@ -75,15 +78,6 @@ const PatientDashboard = () => {
             });
             if (res.ok) setData(await res.json());
         } catch (err) { console.error(err); } finally { setLoading(false); }
-    };
-
-    const fetchHistory = async () => {
-        try {
-            const res = await fetch(`${API_URL}/history`, {
-                headers: { 'x-user': JSON.stringify(user) }
-            });
-            if (res.ok) setHistory(await res.json());
-        } catch (err) { console.error(err); }
     };
 
     const handleIssueSubmit = async (issueText) => {
@@ -139,7 +133,7 @@ const PatientDashboard = () => {
 
     const handlePayBill = async (amount, method) => {
         try {
-            const res = await fetch('https://dwo-final.onrender.com/api/patient/pay-bill', {
+            const res = await fetch(apiUrl('/patient/pay-bill'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(user) },
                 body: JSON.stringify({ amount, method })
@@ -319,10 +313,16 @@ const PatientDashboard = () => {
                             )}
 
                             {/* Stage: Discharged — show completion summary + restart option */}
-                            {status === 'discharged' && (
+                            {status === 'discharged' && !hasDismissedDischarge && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                                     {/* Discharge confirmation banner */}
-                                    <div style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', padding: '28px', borderRadius: '24px', border: '1px solid #6EE7B7', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                                    <div style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)', padding: '28px', borderRadius: '24px', border: '1px solid #6EE7B7', display: 'flex', alignItems: 'flex-start', gap: '16px', position: 'relative' }}>
+                                        <button 
+                                            onClick={() => setHasDismissedDischarge(true)}
+                                            style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: '#047857', cursor: 'pointer', fontWeight: 800, fontSize: '12px' }}
+                                        >
+                                            Dismiss ×
+                                        </button>
                                         <div style={{ width: '52px', height: '52px', background: '#10B981', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
                                             <CheckCircle size={28} />
                                         </div>
@@ -386,10 +386,17 @@ const PatientDashboard = () => {
                                     <IssueSubmission issue={null} onSubmit={handleIssueSubmit} />
                                 </div>
                             )}
+
+                            {/* If discharged and dismissed, or just registered, show issue submission */}
+                            {(status === 'registered' || (status === 'discharged' && hasDismissedDischarge)) && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                    <IssueSubmission issue={null} onSubmit={handleIssueSubmit} />
+                                </div>
+                            )}
                         </div>
                     </div>
                 ) : (
-                    <VisitHistory history={visitHistory} />
+                    <VisitHistory history={sortedVisitHistory} />
                 )}
             </main>
         </div>

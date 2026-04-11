@@ -126,13 +126,19 @@ router.put('/discharge-patient', verifyUser, verifyRole(['Nurse']), async (req, 
 
         const historyObject = {
             visitId: new ObjectId(),
-            date: new Date().toISOString(), // Fix "Invalid Date"
+            date: new Date().toISOString(),
             dischargedAt: new Date(),
+            patientIssue: {
+                category: patient.issue?.category,
+                description: patient.issue?.description,
+                submittedAt: patient.issue?.timestamp || patient.issue?.submittedAt
+            },
             nursePhase: {
-                assignedAt: patient.issue?.submittedAt,
+                assignedAt: patient.issue?.timestamp || patient.issue?.submittedAt,
                 vitalsAt: patient.vitals?.collectedAt,
                 nurseName: patient.assignedNurse?.name,
-                vitals: patient.vitals
+                vitals: patient.vitals,
+                notes: patient.vitals?.notes
             },
             doctorPhase: {
                 doctorName: patient.assignedDoctor?.name,
@@ -145,9 +151,9 @@ router.put('/discharge-patient', verifyUser, verifyRole(['Nurse']), async (req, 
                 billNo: patient.billing?.billNo,
                 totalAmount: patient.billing?.totalAmount,
                 consultationFee: patient.billing?.consultationFee,
-                prescriptionFee: patient.billing?.prescriptionFee,
-                paymentMethod: patient.billing?.method,
-                paidAt: patient.billing?.paidAt
+                prescriptionFee: patient.billing?.prescriptionFee || patient.billing?.medicinalCharges,
+                paymentMethod: patient.billing?.method || 'Card',
+                paidAt: patient.billing?.paidAt || new Date()
             }
         };
 
@@ -155,8 +161,11 @@ router.put('/discharge-patient', verifyUser, verifyRole(['Nurse']), async (req, 
             { _id: new ObjectId(patientId) },
             { 
                 $set: { 
-                    status: 'registered',
-                    visitHistory: patient.visitHistory ? [...patient.visitHistory, historyObject] : [historyObject]
+                    status: 'discharged', // Change from 'registered' to 'discharged' to trigger completion UI
+                    lastVisit: historyObject
+                },
+                $push: {
+                    visitHistory: historyObject
                 },
                 $unset: {
                     issue: "", vitals: "", nurseVisit: "", doctorVisit: "",

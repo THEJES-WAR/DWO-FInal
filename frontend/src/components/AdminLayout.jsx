@@ -1,7 +1,7 @@
 import React from 'react';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet, Navigate } from 'react-router-dom';
 import {
-  LayoutDashboard, AlertTriangle, GitBranch, Users,
+  LayoutDashboard, GitBranch, Users,
   Calendar, Bell, FileText, LogOut, Activity, ChevronRight
 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
@@ -10,22 +10,21 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user'));
+  const { notifications, toggleDrawer } = useNotifications();
 
   if (!user || user.role !== 'Admin') {
-    navigate('/');
-    return null;
+    return <Navigate to="/" replace />;
   }
 
   const menuItems = [
     { label: 'Overview',     icon: LayoutDashboard, path: '/admin-v2/overview' },
     { label: 'Workflow',     icon: GitBranch,        path: '/admin-v2/workflow' },
+    { label: 'Patients',     icon: FileText,         path: '/admin-v2/patients' },
     { label: 'Staff',        icon: Users,            path: '/admin-v2/staff' },
     { label: 'Appointments', icon: Calendar,         path: '/admin-v2/appointments' },
   ];
 
   const activePage = location.pathname.split('/').pop().replace('-', ' ');
-
-  const { notifications, toggleDrawer } = useNotifications();
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -68,10 +67,11 @@ const AdminLayout = () => {
           <p style={{ fontSize: '10px', fontWeight: 700, color: '#94A3B8', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 8px', marginBottom: '8px' }}>
             Main Menu
           </p>
-          {menuItems.map(({ label, icon: Icon, path }) => {
-            const isActive = location.pathname.includes(path);
+          {menuItems.map((item) => {
+            const IconComponent = item.icon;
+            const isActive = location.pathname.includes(item.path);
             return (
-              <button key={label} onClick={() => navigate(path)} style={{
+              <button key={item.label} onClick={() => navigate(item.path)} style={{
                 display: 'flex', alignItems: 'center', gap: '10px',
                 width: '100%', padding: '9px 12px',
                 borderRadius: '8px', border: 'none', cursor: 'pointer',
@@ -86,8 +86,8 @@ const AdminLayout = () => {
                 onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#1E293B'; } }}
                 onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#475569'; } }}
               >
-                <Icon size={17} style={{ flexShrink: 0, color: isActive ? '#2563EB' : '#94A3B8' }} />
-                <span style={{ flex: 1 }}>{label}</span>
+                <IconComponent size={17} style={{ flexShrink: 0, color: isActive ? '#2563EB' : '#94A3B8' }} />
+                <span style={{ flex: 1 }}>{item.label}</span>
                 {isActive && <ChevronRight size={14} style={{ color: '#93C5FD' }} />}
               </button>
             );

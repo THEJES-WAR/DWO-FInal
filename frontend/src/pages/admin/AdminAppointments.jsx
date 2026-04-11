@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, AlertTriangle, CheckCircle2, Clock, RefreshCw, Bell, User, Stethoscope, Activity, X, Send, Loader } from 'lucide-react';
+import { apiUrl } from '../../utils/api';
 
 const STATUS_META = {
   booked:              { label: 'Booked',     bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' },
@@ -31,7 +32,7 @@ const AdminAppointments = () => {
   const fetchAppointments = async () => {
     try {
       const freshUser = JSON.parse(localStorage.getItem('user'));
-      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/all-appointments', {
+      const res = await fetch(apiUrl('/admin-new/all-appointments'), {
         headers: { 'x-user': JSON.stringify(freshUser) }
       });
       if (res.ok) { setData(await res.json()); setLastSync(new Date()); }
@@ -50,7 +51,7 @@ const AdminAppointments = () => {
     setSending(true);
     try {
       const freshUser = JSON.parse(localStorage.getItem('user'));
-      const res = await fetch('https://dwo-final.onrender.com/api/admin-new/remind', {
+      const res = await fetch(apiUrl('/admin-new/remind'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user': JSON.stringify(freshUser) },
         body: JSON.stringify({

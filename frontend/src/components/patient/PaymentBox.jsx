@@ -50,9 +50,8 @@ const PaymentBox = ({ billing, onPaymentComplete }) => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}><span style={{ color: '#64748B' }}>Consultation</span><span style={{ fontWeight: 700 }}>₹{billing.consultationFee}</span></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}><span style={{ color: '#64748B' }}>Tests/Investigations</span><span style={{ fontWeight: 700 }}>₹{billing.testFee}</span></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}><span style={{ color: '#64748B' }}>Pharmacy</span><span style={{ fontWeight: 700 }}>₹{billing.prescriptionFee}</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}><span style={{ color: '#64748B' }}>Consultation</span><span style={{ fontWeight: 700 }}>₹{billing.consultationFee || 300}</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}><span style={{ color: '#64748B' }}>Medicinal Charges</span><span style={{ fontWeight: 700 }}>₹{billing.medicinalCharges || billing.prescriptionFee || 0}</span></div>
                     <div style={{ height: '1px', background: '#E2E8F0', margin: '8px 0' }}></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 900, color: '#1E293B' }}><span>Total</span><span>₹{billing.totalAmount}</span></div>
                 </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Calendar, Clock, ChevronRight, Activity, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { DEFAULT_SLOTS } from '../../utils/availability';
+import { apiUrl } from '../../utils/api';
 
 const DoctorSelector = ({ onSelect }) => {
     const [doctors, setDoctors] = useState([]);
@@ -15,7 +16,7 @@ const DoctorSelector = ({ onSelect }) => {
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user) return;
 
-        const url = new URL('https://dwo-final.onrender.com/api/patient/doctor-list');
+        const url = new URL(apiUrl('/patient/doctor-list'));
 
         fetch(url, { headers: { 'x-user': JSON.stringify(user) } })
             .then(res => res.json())

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CreditCard, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
 import DischargePanel from './DischargePanel';
+import { apiUrl } from '../../utils/api';
 
 const BillingPanel = ({ patient, onComplete }) => {
     const [loading, setLoading] = useState(false);
@@ -14,7 +15,7 @@ const BillingPanel = ({ patient, onComplete }) => {
     const handleMarkPaid = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`https://dwo-final.onrender.com/api/nurse/mark-billing-paid`, {
+            const res = await fetch(apiUrl('/nurse/mark-billing-paid'), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'x-user': localStorage.getItem('user') },
                 body: JSON.stringify({ patientId: patient.id })

@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, X, Users, Stethoscope, Heart, Shield, LogOut, Search, Activity } from 'lucide-react';
 import '../styles/AdminDashboard.css';
 import AdminWorkflowAnalytics from './AdminWorkflowAnalytics';
+import { API_ORIGIN } from '../utils/api';
 
-const API_URL = 'https://dwo-final.onrender.com';
+const API_URL = API_ORIGIN;
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
